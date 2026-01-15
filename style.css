@@ -1,0 +1,1729 @@
+/* ========================================
+   ШРИФТЫ
+   ======================================== */
+@font-face {
+    font-family: 'Rostelecom Basis';
+    src: url('fonts/RostelecomBasis-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Rostelecom Basis';
+    src: url('fonts/RostelecomBasis-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Rostelecom Basis';
+    src: url('fonts/RostelecomBasis-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ========================================
+   CSS ПЕРЕМЕННЫЕ
+   ======================================== */
+:root {
+    /* Цвета */
+    --color-primary: #667eea;
+    --color-secondary: #764ba2;
+    --color-white: #ffffff;
+    --color-text: #333333;
+    --color-success: #4CAF50;
+    --color-shadow: rgba(0, 0, 0, 0.1);
+    --color-shadow-dark: rgba(0, 0, 0, 0.3);
+
+    /* Фон */
+    --bg-gradient: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    --bg-overlay: rgba(0, 0, 0, 0.3);
+
+    /* Размеры */
+    --logo-size: 120px;
+    --border-radius: 20px;
+    --border-radius-sm: 12px;
+
+    /* Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+
+    /* Transitions */
+    --transition-fast: 0.3s ease;
+    --transition-medium: 0.5s ease;
+    --transition-slow: 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+    /* Shadows */
+    --shadow-sm: 0 4px 12px var(--color-shadow);
+    --shadow-md: 0 8px 32px var(--color-shadow);
+    --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.15);
+    --shadow-xl: 0 20px 60px var(--color-shadow-dark);
+}
+
+/* ========================================
+   ГЛОБАЛЬНЫЕ СТИЛИ
+   ======================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Rostelecom Basis', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-gradient);
+    height: 100vh;
+    height: 100dvh;
+    padding: var(--spacing-sm);
+    position: relative;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Фоновое изображение */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('christmas-background3.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    opacity: 1;
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease 0.3s;
+}
+
+body.intro-active::before {
+    opacity: 0;
+}
+
+/* ========================================
+   ОСНОВНОЙ КОНТЕЙНЕР
+   ======================================== */
+.container {
+    max-width: 90vw;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    padding: 0;
+    padding-top: 80px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    height: calc(100vh - var(--spacing-sm) * 2);
+}
+
+/* ========================================
+   ВСТУПИТЕЛЬНЫЙ ЭКРАН
+   ======================================== */
+.intro-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10000;
+    background-image: url('christmas-background1.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.intro-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ========================================
+   МЕРЦАЮЩИЕ ЗВЁЗДЫ
+   ======================================== */
+.stars-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.star {
+    position: absolute;
+    background: #ffffff;
+    border-radius: 50%;
+    animation: twinkle var(--twinkle-duration, 2s) ease-in-out infinite;
+    animation-delay: var(--twinkle-delay, 0s);
+    box-shadow: 0 0 var(--star-glow, 3px) rgba(255, 255, 255, 0.8);
+}
+
+/* Размеры звёзд */
+.star.tiny {
+    width: 1px;
+    height: 1px;
+    --star-glow: 2px;
+}
+
+.star.small {
+    width: 2px;
+    height: 2px;
+    --star-glow: 3px;
+}
+
+.star.medium {
+    width: 3px;
+    height: 3px;
+    --star-glow: 5px;
+}
+
+.star.large {
+    width: 4px;
+    height: 4px;
+    --star-glow: 7px;
+}
+
+@keyframes twinkle {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* ========================================
+   ПАДАЮЩИЕ СНЕЖИНКИ
+   ======================================== */
+.snowflakes-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 50;
+}
+
+.snowflake {
+    position: absolute;
+    top: -20px;
+    color: #ffffff;
+    opacity: 0.9;
+    font-size: var(--snowflake-size, 16px);
+    animation: snowfall var(--fall-duration, 10s) linear infinite;
+    animation-delay: var(--fall-delay, 0s);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    filter: drop-shadow(0 0 3px rgba(200, 220, 255, 0.6));
+}
+
+@keyframes snowfall {
+    0% {
+        transform: translateY(-20px) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.9;
+    }
+    90% {
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(100vh) translateX(var(--drift, 50px)) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Скрыть снежинки на вступительном экране */
+body.intro-active .snowflakes-container {
+    opacity: 0;
+}
+
+.snowflakes-container {
+    transition: opacity 0.5s ease;
+}
+
+.intro-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    position: relative;
+    z-index: 2;
+    display: none;
+}
+
+/* Скрытие элементов при показе вступительного экрана */
+.hidden-on-intro {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* ========================================
+   ЛОГОТИП
+   ======================================== */
+.logo {
+    display: none;
+}
+
+/* ========================================
+   ЗАГОЛОВОК (две строки, разный стиль)
+   ======================================== */
+.hero-title {
+    position: fixed;
+    top: calc(var(--spacing-sm) + 80px);
+    left: calc((100vw - 90vw) / 2 + 2rem);
+    transform: none;
+    z-index: 100;
+
+	display: inline-block;
+    text-align: left;
+
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    border-radius: 0;
+
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    line-height: 1;
+    max-width: 30vw;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+/* Верхняя строка: жирная, белая, капсом */
+.hero-title__top {
+    display: block;
+    font-family: 'Rostelecom Basis', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+
+    color: #ffffff;
+
+    font-size: clamp(5.67rem, 9.45vw, 9.45rem);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Нижняя строка: рукописная, белая, чуть "заезжает" на верхнюю */
+.hero-title__bottom {
+    display: block;
+
+    font-family: 'Brush Script MT', 'Segoe Script', 'Comic Sans MS', cursive;
+    font-weight: 400;
+
+    color: #ff4f12;
+    font-size: clamp(4.536rem, 8.316vw, 8.316rem);
+
+    margin-top: -0.3em;
+    margin-left: 14ch;
+
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    transform: rotate(-2deg);
+    font-style: italic;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========================================
+   БЕНТО-СЕТКА
+   ======================================== */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1rem;
+    height: calc(100% - 160px);
+    margin-bottom: 0;
+}
+
+.bento-item {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 1);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.1),
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow var(--transition-fast);
+    cursor: pointer;
+    position: relative;
+    perspective: 1000px;
+    overflow: hidden;
+    transform-style: preserve-3d;
+    transform: translateY(0) translateZ(0);
+    contain: layout style paint;
+}
+
+/* Плавное появление карточек - только при первой загрузке */
+.bento-item.animate-in {
+    opacity: 0;
+    animation: cardAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: var(--appear-delay, 0s);
+}
+
+/* Анимация плавного появления карточек */
+@keyframes cardAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(60px) rotateX(-15deg) scale(0.9);
+    }
+    60% {
+        opacity: 1;
+        transform: translateY(-10px) rotateX(5deg) scale(1.02);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotateX(0deg) scale(1);
+    }
+}
+
+.bento-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%),
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 35px,
+            rgba(255, 255, 255, 0.05) 35px,
+            rgba(255, 255, 255, 0.05) 70px
+        );
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.bento-item:hover:not(.viewed)::before {
+    opacity: 1;
+}
+
+/* Снежинки SVG паттерн на фоне карточек */
+.bento-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10 L30 50 M10 30 L50 30 M18 18 L42 42 M42 18 L18 42' stroke='rgba(255,255,255,0.15)' stroke-width='1.5'/%3E%3Ccircle cx='30' cy='30' r='3' fill='rgba(255,255,255,0.2)'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.bento-item:hover:not(.viewed) {
+    transform: translateY(-12px) translateZ(30px) scale(1.02);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.15),
+        0 16px 48px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.bento-item.viewed {
+    opacity: 0.7;
+    position: relative;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.bento-item.viewed:hover {
+    transform: none;
+}
+
+.bento-item.viewed::after {
+    content: '✓';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: var(--color-white);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    box-shadow:
+        0 4px 15px rgba(76, 175, 80, 0.6),
+        0 0 20px rgba(76, 175, 80, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    animation: checkmarkPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    border: 3px solid rgba(255, 255, 255, 0.8);
+}
+
+@keyframes checkmarkPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Позиционирование элементов сетки */
+/* Верх - большая горизонтальная справа */
+.bento-item.vladivostok {
+    grid-column: 4 / 6;
+    grid-row: 1 / 2;
+}
+
+/* Ряд 2 - слева квадратная */
+.bento-item.region1 {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+}
+
+/* Ряд 2 - центр горизонтальная */
+.bento-item.region3 {
+    grid-column: 2 / 4;
+    grid-row: 2 / 3;
+}
+
+/* Ряд 2 - справа квадратная */
+.bento-item.yanao {
+    grid-column: 4 / 5;
+    grid-row: 2 / 3;
+}
+
+/* Ряды 2-3 - вертикальная справа */
+.bento-item.nn {
+    grid-column: 5 / 6;
+    grid-row: 2 / 4;
+}
+
+/* Ряд 3 - слева горизонтальная */
+.bento-item.krasnodar {
+    grid-column: 1 / 3;
+    grid-row: 3 / 4;
+}
+
+/* Ряд 3 - центр квадратная */
+.bento-item.region2 {
+    grid-column: 3 / 4;
+    grid-row: 3 / 4;
+}
+
+/* Ряд 3 - справа квадратная */
+.bento-item.region4 {
+    grid-column: 4 / 5;
+    grid-row: 3 / 4;
+}
+
+/* ========================================
+   РАЗДЕЛЕНИЕ КАРТОЧКИ ВЛАДИВОСТОКА
+   ======================================== */
+
+/* Анимация разделения */
+.bento-item.vladivostok.splitting {
+    animation: splitCard 0.8s ease-in-out forwards;
+}
+
+@keyframes splitCard {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(102, 126, 234, 0.6);
+    }
+    100% {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+}
+
+/* Позиционирование разделённых карточек в режиме split-mode */
+.bento-grid.split-mode .bento-item.vladivostok-split-left {
+    grid-column: 4 / 5;
+    grid-row: 1 / 2;
+    animation: splitAppearLeft 0.6s ease-out forwards;
+}
+
+.bento-grid.split-mode .bento-item.kirov-split-right {
+    grid-column: 5 / 6;
+    grid-row: 1 / 2;
+    animation: splitAppearRight 0.6s ease-out forwards;
+}
+
+@keyframes splitAppearLeft {
+    0% {
+        opacity: 0;
+        transform: translateX(50%) scale(0.8);
+    }
+    100% {
+        opacity: 0.7;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes splitAppearRight {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* Когда Кировская область просмотрена - такой же стиль как у остальных */
+.bento-grid.split-mode .bento-item.kirov-split-right.viewed {
+    opacity: 0.7 !important;
+    animation: none !important;
+    pointer-events: none;
+    cursor: not-allowed;
+    border: 1px solid rgba(255, 255, 255, 1);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.1),
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* ========================================
+   КАРТОЧКА РУКОВОДИТЕЛЯ #43 (КИРОВСКАЯ)
+   ======================================== */
+.bento-item.kirov .card-front {
+    padding: 0;
+}
+
+.bento-item.kirov .region-ornament {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+}
+
+/* Сине-оранжевый градиент для VIP-карточки */
+.bento-item.kirov:not(.viewed) {
+    position: relative;
+    border: 3px solid transparent;
+    background: linear-gradient(rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.98)) padding-box,
+                conic-gradient(from var(--border-angle, 0deg),
+                    #667eea, #764ba2, #ff4f12, #ff8c00,
+                    #667eea, #764ba2, #ff4f12, #ff8c00,
+                    #667eea) border-box;
+    animation: rotateBorder 3s linear infinite;
+    box-shadow:
+        0 0 20px rgba(102, 126, 234, 0.4),
+        0 0 40px rgba(255, 79, 18, 0.3);
+}
+
+/* Вращение градиента по контуру */
+@keyframes rotateBorder {
+    0% {
+        --border-angle: 0deg;
+    }
+    100% {
+        --border-angle: 360deg;
+    }
+}
+
+/* Поддержка CSS Houdini для плавной анимации */
+@property --border-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+/* Внешнее свечение */
+.bento-item.kirov:not(.viewed)::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    background: conic-gradient(from var(--border-angle, 0deg),
+        #667eea, #764ba2, #ff4f12, #ff8c00,
+        #667eea, #764ba2, #ff4f12, #ff8c00,
+        #667eea);
+    border-radius: calc(var(--border-radius) + 8px);
+    z-index: -1;
+    opacity: 0.6;
+    filter: blur(15px);
+    animation: rotateBorder 3s linear infinite, pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        opacity: 0.5;
+        filter: blur(15px);
+    }
+    50% {
+        opacity: 0.8;
+        filter: blur(20px);
+    }
+}
+
+/* При наведении - усиление эффекта */
+.bento-item.kirov:not(.viewed):hover {
+    box-shadow:
+        0 0 30px rgba(102, 126, 234, 0.6),
+        0 0 60px rgba(255, 79, 18, 0.5);
+    transform: translateY(-12px) scale(1.03);
+}
+
+.bento-item.kirov:not(.viewed):hover::before {
+    opacity: 1;
+    filter: blur(25px);
+}
+
+/* Стили для разделённых карточек */
+.bento-item.split-card {
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
+}
+
+/* ========================================
+   FLIP КАРТОЧКИ
+   ======================================== */
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.9s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.bento-item.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+.card-front,
+.card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: hidden;
+    border-radius: var(--border-radius);
+    padding: 0;
+}
+
+.card-front {
+    background: var(--color-white);
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.card-back {
+    transform: rotateY(180deg);
+    position: relative;
+    pointer-events: none;
+}
+
+/* Когда карточка перевернута, меняем pointer-events */
+.bento-item.flipped .card-front {
+    pointer-events: none;
+}
+
+.bento-item.flipped .card-back {
+    pointer-events: auto;
+}
+
+/* ========================================
+   КОНТЕНТ КАРТОЧЕК
+   ======================================== */
+.region-ornament {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 1;
+    filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.1));
+    position: relative;
+    z-index: 2;
+}
+
+/* Автомобильный номер */
+.license-plate {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Rostelecom Basis', monospace;
+    font-weight: bold;
+    box-shadow: none;
+    z-index: 10;
+}
+
+.license-code {
+    font-size: 2.98rem;
+    color: #ffffff;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    font-weight: 900;
+}
+
+.bento-item:hover:not(.viewed) .region-ornament {
+    transform: none;
+    filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.1));
+}
+
+/* Увеличенные картинки на всю карточку - объединенные стили для всех регионов */
+.bento-item.krasnodar .card-front,
+.bento-item.nn .card-front,
+.bento-item.vladivostok .card-front,
+.bento-item.region4 .card-front,
+.bento-item.region2 .card-front,
+.bento-item.region3 .card-front,
+.bento-item.region1 .card-front,
+.bento-item.yanao .card-front {
+    padding: 0;
+}
+
+.bento-item.krasnodar .region-ornament,
+.bento-item.nn .region-ornament,
+.bento-item.vladivostok .region-ornament,
+.bento-item.region4 .region-ornament,
+.bento-item.region2 .region-ornament,
+.bento-item.region3 .region-ornament,
+.bento-item.region1 .region-ornament,
+.bento-item.yanao .region-ornament {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+}
+
+.region-thumbnail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    z-index: 1;
+}
+
+/* ========================================
+   КНОПКИ
+   ======================================== */
+.upload-region-btn {
+    background: var(--bg-gradient);
+    color: var(--color-white);
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: 'Rostelecom Basis', sans-serif;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    pointer-events: auto;
+}
+
+.upload-region-btn:hover {
+    transform: translate(-50%, calc(-50% - 2px));
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.upload-region-btn:active {
+    transform: translate(-50%, -50%);
+}
+
+.service-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+}
+
+.service-btn {
+    background: var(--bg-gradient);
+    color: var(--color-white);
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: 'Rostelecom Basis', sans-serif;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    white-space: nowrap;
+}
+
+.service-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.service-btn:active {
+    transform: translateY(0);
+}
+
+.service-btn:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ========================================
+   ПРОГРЕСС БАР
+   ======================================== */
+.progress-container {
+    position: fixed;
+    bottom: 0.5rem;
+    right: calc((100vw - 90vw) / 2 + var(--spacing-sm));
+    background: rgba(255, 255, 255, 0.98);
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 15px var(--color-shadow-dark);
+    z-index: 100;
+    transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    white-space: nowrap;
+}
+
+/* ========================================
+   ПОЛНОЭКРАННАЯ ПРЕЗЕНТАЦИЯ
+   ======================================== */
+.fullscreen-presentation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.98);
+    z-index: 1000;
+    display: none;
+    opacity: 0;
+    transition: opacity var(--transition-medium);
+}
+
+.fullscreen-presentation.active {
+    display: block;
+    opacity: 1;
+}
+
+.slide-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    height: 75%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slide {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-xl);
+}
+
+.slide.active {
+    display: block;
+    animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(50px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* Кнопки навигации */
+.nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 15px var(--color-shadow-dark);
+    font-family: 'Rostelecom Basis', sans-serif;
+    user-select: none;
+}
+
+.nav-button:hover:not(.disabled) {
+    background: var(--color-white);
+    transform: translateY(-50%) scale(1.05);
+}
+
+.nav-button:active:not(.disabled) {
+    transform: translateY(-50%) scale(0.98);
+}
+
+.nav-button.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.nav-button.prev {
+    left: -100px;
+}
+
+.nav-button.next {
+    right: -100px;
+}
+
+.nav-button:focus-visible {
+    outline: 3px solid var(--color-white);
+    outline-offset: 2px;
+}
+
+.back-btn {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    padding: 1rem 3rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 15px var(--color-shadow-dark);
+    font-family: 'Rostelecom Basis', sans-serif;
+}
+
+.back-btn:hover {
+    background: var(--color-white);
+    transform: translateX(-50%) translateY(-3px);
+}
+
+.back-btn:active {
+    transform: translateX(-50%) translateY(0);
+}
+
+.back-btn:focus-visible {
+    outline: 3px solid var(--color-white);
+    outline-offset: 2px;
+}
+
+.slide-counter {
+    position: absolute;
+    top: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    color: var(--color-text);
+    box-shadow: 0 4px 15px var(--color-shadow-dark);
+    font-size: 1rem;
+}
+
+/* ========================================
+   АДАПТИВНОСТЬ
+   ======================================== */
+
+/* Адаптивные галочки */
+@media (max-width: 1200px) {
+    .bento-item.viewed::after {
+        width: 50px;
+        height: 50px;
+        font-size: 2rem;
+    }
+}
+
+/* Планшеты */
+@media (max-width: 1200px) {
+    .container {
+        padding-top: 140px;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .bento-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: auto;
+        height: calc(100% - 70px);
+        overflow-y: auto;
+    }
+
+    .bento-item {
+        grid-column: auto !important;
+        grid-row: auto !important;
+        min-height: 220px;
+    }
+
+    /* Разделённые карточки на планшетах */
+    .bento-grid.split-mode .bento-item.vladivostok-split-left,
+    .bento-grid.split-mode .bento-item.kirov-split-right {
+        grid-column: auto !important;
+        grid-row: auto !important;
+    }
+
+    .license-plate {
+        top: 0.4rem;
+        right: 0.4rem;
+        padding: 0.25rem 0.5rem;
+        gap: 0.4rem;
+    }
+
+    .license-code {
+        font-size: 1.6rem;
+        font-weight: 900;
+    }
+
+    .hero-title__top {
+        font-size: clamp(2.028rem, 4.732vw, 3.718rem);
+    }
+
+    .hero-title__bottom {
+        font-size: clamp(1.3rem, 3.9vw, 3.12rem);
+        margin-left: 9ch;
+        margin-top: 4em;
+    }
+
+    .progress-container {
+        gap: 1rem;
+        padding: 0.75rem 1.25rem;
+        bottom: 0.5rem;
+        right: calc((100vw - 90vw) / 2 + var(--spacing-sm));
+    }
+
+    .service-buttons {
+        gap: 0.5rem;
+    }
+
+    .service-btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .bento-item.viewed::after {
+        width: 45px;
+        height: 45px;
+        font-size: 1.8rem;
+        top: 0.75rem;
+        right: 0.75rem;
+    }
+}
+
+/* Мобильные устройства */
+@media (max-width: 768px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    .container {
+        padding-top: 120px;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .logo {
+        width: 80px;
+        top: 0.5rem;
+        left: 0.5rem;
+    }
+
+    .hero-title {
+        top: 0.5rem;
+    }
+
+    .hero-title__top {
+        font-size: clamp(1.69rem, 5.915vw, 2.704rem);
+    }
+
+    .hero-title__bottom {
+        font-size: clamp(1.17rem, 5.2vw, 2.34rem);
+        margin-left: 8ch;
+        margin-top: 3.5em;
+    }
+
+    .bento-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        height: calc(100% - 60px);
+        overflow-y: auto;
+    }
+
+    .bento-item {
+        min-height: 180px;
+    }
+
+    .license-plate {
+        top: 0.35rem;
+        right: 0.35rem;
+        padding: 0.22rem 0.45rem;
+        gap: 0.35rem;
+    }
+
+    .license-code {
+        font-size: 1.4rem;
+        font-weight: 900;
+    }
+
+    .progress-container {
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        bottom: 0.5rem;
+        right: calc((100vw - 90vw) / 2 + 0.5rem);
+    }
+
+    .service-buttons {
+        gap: 0.5rem;
+    }
+
+    .service-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.7rem;
+    }
+
+    .nav-button {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.2rem;
+    }
+
+    .nav-button.prev {
+        left: -80px;
+    }
+
+    .nav-button.next {
+        right: -80px;
+    }
+
+    .slide-container {
+        width: 95%;
+        height: 70%;
+    }
+}
+
+@media (max-width: 480px) {
+    .bento-item.viewed::after {
+        width: 40px;
+        height: 40px;
+        font-size: 1.5rem;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+}
+
+/* Маленькие смартфоны */
+@media (max-width: 480px) {
+    body {
+        padding: 0.25rem;
+    }
+
+    .container {
+        padding-top: 100px;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .logo {
+        width: 60px;
+        top: 0.25rem;
+        left: 0.25rem;
+    }
+
+    .hero-title {
+        top: 0.25rem;
+    }
+
+    .hero-title__top {
+        font-size: clamp(1.521rem, 5.408vw, 2.197rem);
+    }
+
+    .hero-title__bottom {
+        font-size: clamp(1.04rem, 4.68vw, 1.82rem);
+        margin-left: 7.5ch;
+        margin-top: 3em;
+    }
+
+    .bento-grid {
+        height: calc(100% - 50px);
+    }
+
+    .license-plate {
+        top: 0.3rem;
+        right: 0.3rem;
+        padding: 0.18rem 0.4rem;
+        gap: 0.3rem;
+    }
+
+    .license-code {
+        font-size: 1.2rem;
+        font-weight: 900;
+    }
+
+    .progress-container {
+        padding: 0.4rem 0.75rem;
+        bottom: 0.25rem;
+        right: calc((100vw - 90vw) / 2 + 0.25rem);
+        gap: 0.5rem;
+        flex-direction: row;
+        flex-wrap: nowrap;
+    }
+
+    .progress-bar {
+        width: 100px;
+        height: 6px;
+    }
+
+    .service-btn {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.65rem;
+    }
+
+    .slide-counter {
+        top: 1rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .back-btn {
+        padding: 0.75rem 2rem;
+        font-size: 1rem;
+        bottom: 1.5rem;
+    }
+
+    .nav-button {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+
+    .nav-button.prev {
+        left: -60px;
+    }
+
+    .nav-button.next {
+        right: -60px;
+    }
+
+    .bento-item {
+        min-height: 180px;
+    }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 360px) {
+    .container {
+        padding-top: 90px;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .logo {
+        width: 50px;
+    }
+
+    .hero-title__top {
+        font-size: clamp(1.352rem, 5.07vw, 1.859rem);
+    }
+
+    .hero-title__bottom {
+        font-size: clamp(0.91rem, 4.42vw, 1.56rem);
+        margin-left: 7ch;
+        margin-top: 2.5em;
+    }
+
+    .bento-grid {
+        height: calc(100% - 45px);
+    }
+
+    .license-plate {
+        top: 0.25rem;
+        right: 0.25rem;
+        padding: 0.15rem 0.35rem;
+        gap: 0.25rem;
+    }
+
+    .license-code {
+        font-size: 1rem;
+        font-weight: 900;
+    }
+
+    .progress-container {
+        padding: 0.3rem 0.5rem;
+        bottom: 0.25rem;
+        right: calc((100vw - 90vw) / 2 + 0.25rem);
+        gap: 0.4rem;
+    }
+
+    .service-btn {
+        padding: 0.3rem 0.4rem;
+        font-size: 0.6rem;
+    }
+
+    .bento-item {
+        min-height: 160px;
+    }
+}
+
+/* Landscape ориентация на мобильных */
+@media (max-height: 500px) and (orientation: landscape) {
+    .slide-container {
+        height: 80%;
+    }
+}
+
+/* Режим уменьшенной анимации */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Высококонтрастный режим */
+@media (prefers-contrast: high) {
+    .bento-item {
+        border: 2px solid var(--color-text);
+    }
+
+    .service-btn,
+    .nav-button,
+    .back-btn {
+        border: 2px solid var(--color-text);
+    }
+}
+
+/* ========================================
+   ФИНАЛЬНЫЙ ЭКРАН С ПОЖЕЛАНИЯМИ
+   ======================================== */
+.final-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #0a0a20 0%, #1a1a3a 50%, #0a0a20 100%);
+    z-index: 2000;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    overflow: hidden;
+}
+
+.final-screen.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+}
+
+/* Фон с мелькающими пожеланиями */
+.wishes-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.floating-wish {
+    position: absolute;
+    color: rgba(255, 255, 255, 0.15);
+    font-size: clamp(0.8rem, 1.5vw, 1.2rem);
+    font-family: 'Rostelecom Basis', sans-serif;
+    white-space: nowrap;
+    animation: floatWish var(--float-duration, 8s) linear infinite;
+    animation-delay: var(--float-delay, 0s);
+    text-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+@keyframes floatWish {
+    0% {
+        transform: translateX(100vw) translateY(var(--start-y, 50%));
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.2;
+    }
+    90% {
+        opacity: 0.2;
+    }
+    100% {
+        transform: translateX(-100%) translateY(var(--end-y, 50%));
+        opacity: 0;
+    }
+}
+
+/* Быстро мелькающие пожелания в центре */
+.flash-wish {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.08);
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    font-family: 'Rostelecom Basis', sans-serif;
+    text-align: center;
+    white-space: nowrap;
+    animation: flashWish 0.15s ease-in-out;
+    text-shadow: 0 0 20px rgba(255, 79, 18, 0.3);
+}
+
+@keyframes flashWish {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    50% {
+        opacity: 0.15;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Основной контент финального экрана */
+.final-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+}
+
+.final-title {
+    font-family: 'Rostelecom Basis', sans-serif;
+    font-size: clamp(1.8rem, 5vw, 3.5rem);
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+    animation: titlePulse 2s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+    0%, 100% {
+        text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+    }
+    50% {
+        text-shadow: 0 0 50px rgba(255, 79, 18, 0.6), 0 0 80px rgba(102, 126, 234, 0.4);
+    }
+}
+
+/* QR контейнер */
+.qr-container {
+    position: relative;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    margin-bottom: 2rem;
+    box-shadow: 0 0 40px rgba(102, 126, 234, 0.5),
+                0 0 80px rgba(255, 79, 18, 0.3);
+}
+
+.qr-code {
+    width: 250px;
+    height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qr-code img,
+.qr-code canvas,
+.qr-code svg {
+    width: 100%;
+    height: 100%;
+}
+
+.qr-glow {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: 25px;
+    background: conic-gradient(from var(--qr-angle, 0deg),
+        #667eea, #764ba2, #ff4f12, #ff8c00,
+        #667eea, #764ba2, #ff4f12, #ff8c00,
+        #667eea);
+    z-index: -1;
+    opacity: 0.7;
+    filter: blur(20px);
+    animation: qrGlowRotate 4s linear infinite;
+}
+
+@keyframes qrGlowRotate {
+    0% { --qr-angle: 0deg; }
+    100% { --qr-angle: 360deg; }
+}
+
+@property --qr-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+.final-instruction {
+    font-family: 'Rostelecom Basis', sans-serif;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.final-note {
+    font-family: 'Rostelecom Basis', sans-serif;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 2rem;
+}
+
+.final-close-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1rem 3rem;
+    border-radius: 50px;
+    font-family: 'Rostelecom Basis', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+
+.final-close-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+}
+
+/* Адаптивность финального экрана */
+@media (max-width: 768px) {
+    .qr-code {
+        width: 200px;
+        height: 200px;
+    }
+
+    .final-content {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .qr-code {
+        width: 180px;
+        height: 180px;
+    }
+
+    .qr-container {
+        padding: 1rem;
+    }
+
+    .final-close-btn {
+        padding: 0.8rem 2rem;
+        font-size: 1rem;
+    }
+}
+
+/* ========================================
+   УТИЛИТЫ
+   ======================================== */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus visible для доступности */
+*:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}

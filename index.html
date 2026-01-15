@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="description" content="Новогодний адвент - Интерактивная презентация регионов">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Новогодний адвент</title>
+    <link rel="preload" href="fonts/RostelecomBasis-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/RostelecomBasis-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Вступительный экран -->
+    <div class="intro-screen" id="introScreen" onclick="hideIntroScreen()">
+        <div class="stars-container" id="starsContainer"></div>
+        <img src="Год единства.png" alt="Год единства" class="intro-image">
+    </div>
+
+    <!-- Снежинки -->
+    <div class="snowflakes-container" id="snowflakesContainer"></div>
+
+    <!-- Логотип -->
+    <img src="logo.png" alt="Ростелеком" class="logo" id="logo" aria-label="Логотип Ростелеком">
+
+    <!-- Заголовок по центру -->
+    <h1 class="hero-title" id="heroTitle" aria-label="Новогодний адвент">
+        <span class="hero-title__top">НОВОГОДНИЙ</span>
+        <span class="hero-title__bottom">адвент</span>
+    </h1>
+
+    <!-- Прогресс с кнопками -->
+    <div class="progress-container" id="progressContainer" role="complementary" aria-label="Прогресс просмотра">
+        <div class="progress-info">
+            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText" aria-live="polite"></div>
+        </div>
+        <div class="service-buttons" role="toolbar" aria-label="Управление">
+            <button class="service-btn" onclick="resetSlides()" aria-label="Удалить все загруженные слайды">
+                🗑️ Сбросить слайды
+            </button>
+            <button class="service-btn" onclick="resetProgress()" aria-label="Сбросить прогресс просмотра">
+                📊 Сбросить прогресс
+            </button>
+        </div>
+    </div>
+
+    <!-- Основной контейнер -->
+    <div class="container" id="mainContainer">
+        <!-- Бенто-сетка -->
+        <div class="bento-grid" id="bentoGrid" role="main" aria-label="Регионы для просмотра"></div>
+    </div>
+
+    <!-- Полноэкранная презентация -->
+    <div class="fullscreen-presentation" id="presentation" role="dialog" aria-modal="true" aria-label="Просмотр слайдов">
+        <div class="slide-counter" id="slideCounter" aria-live="polite"></div>
+
+        <div class="slide-container">
+            <div id="slidesContainer"></div>
+            <button class="nav-button prev" onclick="prevSlide()" aria-label="Предыдущий слайд" tabindex="0">←</button>
+            <button class="nav-button next" onclick="nextSlide()" aria-label="Следующий слайд" tabindex="0">→</button>
+        </div>
+
+        <button class="back-btn" onclick="closePresentation()" aria-label="Вернуться к списку регионов" tabindex="0">Назад</button>
+    </div>
+
+    <!-- Финальный экран с пожеланиями и QR -->
+    <div class="final-screen" id="finalScreen">
+        <!-- Фон с мелькающими пожеланиями -->
+        <div class="wishes-background" id="wishesBackground"></div>
+
+        <!-- Основной контент -->
+        <div class="final-content">
+            <h2 class="final-title">Получите своё пожелание!</h2>
+
+            <div class="qr-container">
+                <div class="qr-code" id="qrCode"></div>
+                <div class="qr-glow"></div>
+            </div>
+
+            <p class="final-instruction">Сканируйте QR-код камерой телефона</p>
+            <p class="final-note">Пожелание фиксируется и не меняется при повторном открытии</p>
+
+            <button class="final-close-btn" onclick="closeFinalScreen()">Завершить</button>
+        </div>
+    </div>
+
+
+    <!-- Скрипт -->
+    <script src="script.js"></script>
+</body>
+</html>
