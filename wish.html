@@ -93,16 +93,12 @@
     .btn:active{ transform: scale(0.98); }
     .btn:hover{ background: rgba(255,255,255,0.14); }
 
-    /* лёгкая анимация появления */
-    .animate{
-      animation: pop .35s ease-out;
-    }
+    .animate{ animation: pop .35s ease-out; }
     @keyframes pop{
       0%{ transform: translateY(6px); opacity:0; }
       100%{ transform: translateY(0); opacity:1; }
     }
 
-    /* снег */
     #snowflakes{
       position:absolute;
       inset:0;
@@ -133,73 +129,56 @@
     <div class="card">
       <h1>Ваше пожелание</h1>
 
-      <div id="wishText" class="wish animate">Подготавливаем…</div>
+      <div id="wishText" class="wish animate">Загружаем пожелание…</div>
 
       <button class="btn" type="button" onclick="saveScreenshot()">
         Сохранить (скриншот)
       </button>
 
       <div class="hint">
-        Пожелание фиксируется на этом устройстве (если браузер позволяет хранение).
+        Каждый новый заход по ссылке даёт новое пожелание.
         Если вы открываете из камеры — при необходимости нажмите «Открыть в Safari/Chrome».
       </div>
     </div>
   </div>
 
   <script>
-    /* === ВСТАВЬТЕ СЮДА ВАШ МАССИВ ИЗ 200 ПОЖЕЛАНИЙ === */
+    /* Вставьте сюда все 200 пожеланий */
     const wishes = [
       "Пусть работа приносит смысл, а не только задачи.",
       "Пусть каждый день даёт один понятный результат.",
       "Пусть ваши усилия замечают и ценят."
-      // ... добавьте остальные до 200
+      // ... вставьте остальные до 200
     ];
-
-    const STORAGE_KEY = 'rostelecom_wish_2025_v3';
 
     function $(id){ return document.getElementById(id); }
 
-    // Безопасный доступ к localStorage (вариант 1: если нельзя — всё равно работаем)
-    function getStorageSafe() {
-      try {
-        const t='__storage_test__';
-        window.localStorage.setItem(t,'1');
-        window.localStorage.removeItem(t);
-        return window.localStorage;
-      } catch(e){
+    // Безопасный sessionStorage (только для того, чтобы не повторять подряд в рамках вкладки)
+    function getSessionSafe(){
+      try{
+        const t='__ss_test__';
+        window.sessionStorage.setItem(t,'1');
+        window.sessionStorage.removeItem(t);
+        return window.sessionStorage;
+      }catch(e){
         return null;
       }
     }
 
-    // FNV-1a 32-bit
-    function fnv1a32(str){
-      let h = 0x811c9dc5;
-      for (let i=0;i<str.length;i++){
-        h ^= str.charCodeAt(i);
-        h = (h + ((h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24))) >>> 0;
-      }
-      return h >>> 0;
-    }
+    // Крипто-рандом (если доступен), иначе Math.random
+    function randomInt(maxExclusive){
+      if (maxExclusive <= 0) return 0;
 
-    function getSeedFromURL(){
       try{
-        const p = new URLSearchParams(location.search);
-        return (p.get('s') || '').trim();
+        if (window.crypto && window.crypto.getRandomValues){
+          const arr = new Uint32Array(1);
+          window.crypto.getRandomValues(arr);
+          return arr[0] % maxExclusive;
+        }
       }catch(e){
-        return '';
+        // fallback ниже
       }
-    }
-
-    function generateToken(){
-      const rnd = Math.random().toString(36).slice(2);
-      const ua  = (navigator.userAgent || '').slice(0,80);
-      const ts  = Date.now().toString(36);
-      return `${ts}.${rnd}.${fnv1a32(ua).toString(36)}`;
-    }
-
-    function pickWishIndex(token, seed){
-      const base = `${token}::${seed}::${wishes.length}`;
-      return (fnv1a32(base) % wishes.length);
+      return Math.floor(Math.random() * maxExclusive);
     }
 
     function showWish(text){
@@ -237,6 +216,35 @@
     }
     window.saveScreenshot = saveScreenshot;
 
+    function pickNewWish(){
+      const n = wishes.length;
+      if (n === 0) return null;
+
+      const ss = getSessionSafe();
+      let last = null;
+
+      if (ss){
+        try{
+          const v = ss.getItem('lastWishIndex');
+          if (v !== null) last = parseInt(v, 10);
+        }catch(e){}
+      }
+
+      // Пытаемся избежать мгновенного повтора подряд (до 5 попыток)
+      let idx = randomInt(n);
+      if (n > 1 && Number.isInteger(last)){
+        for (let tries = 0; tries < 5 && idx === last; tries++){
+          idx = randomInt(n);
+        }
+      }
+
+      if (ss){
+        try{ ss.setItem('lastWishIndex', String(idx)); }catch(e){}
+      }
+
+      return wishes[idx];
+    }
+
     function init(){
       try{
         if(!Array.isArray(wishes) || wishes.length === 0){
@@ -246,42 +254,13 @@
 
         createSnowflakes();
 
-        const storage = getStorageSafe();
-        const seed = getSeedFromURL();
-
-        // 1) если сохранено — показать сразу
-        if(storage){
-          try{
-            const raw = storage.getItem(STORAGE_KEY);
-            if(raw){
-              const data = JSON.parse(raw);
-              if(data && typeof data.wish === 'string' && data.wish.trim()){
-                showWish(data.wish);
-                return;
-              }
-            }
-          }catch(e){
-            // игнорируем
-          }
+        const wish = pickNewWish();
+        if (!wish){
+          showError('Не удалось выбрать пожелание.');
+          return;
         }
-
-        // 2) иначе выбрать новое
-        const token = generateToken();
-        const index = pickWishIndex(token, seed);
-        const wish = wishes[index];
 
         showWish(wish);
-
-        // 3) сохранить, если можно
-        if(storage){
-          try{
-            storage.setItem(STORAGE_KEY, JSON.stringify({
-              token, seed, index, wish, timestamp: Date.now()
-            }));
-          }catch(e){
-            // не критично
-          }
-        }
       }catch(e){
         console.error(e);
         showError('Обновите страницу.');
