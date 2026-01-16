@@ -18,7 +18,7 @@
     <link rel="preload" href="christmas-background1.webp" as="image" type="image/webp">
     <link rel="preload" href="christmas-background3.webp" as="image" type="image/webp">
 
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
 
     <!-- WebP Detection Script (inline для быстрого выполнения) -->
     <script>
@@ -49,24 +49,13 @@
         <img src="logo.png" alt="Ростелеком" class="logo" id="logo" aria-label="Логотип Ростелеком" loading="lazy">
     </picture>
 
-    <div class="progress-container" id="progressContainer" role="complementary" aria-label="Прогресс просмотра">
-        <div class="progress-info">
-            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <div class="progress-text" id="progressText" aria-live="polite"></div>
-        </div>
-        <div class="service-buttons" role="toolbar" aria-label="Управление">
-            <button class="service-btn primary" onclick="loadAllSlides()" aria-label="Загрузить слайды из репозитория">
-                Загрузить слайды
-            </button>
-            <button class="service-btn" onclick="resetSlides()" aria-label="Удалить все загруженные слайды">
-                Сбросить слайды
-            </button>
-            <button class="service-btn" onclick="resetProgress()" aria-label="Сбросить прогресс просмотра">
-                Сбросить прогресс
-            </button>
-        </div>
+    <div class="control-buttons" id="controlButtons" role="toolbar" aria-label="Управление">
+        <button class="control-btn wishes-btn" onclick="showFinalScreen()" aria-label="Открыть пожелания">
+            Пожелания
+        </button>
+        <button class="control-btn reset-btn" onclick="resetProgress()" aria-label="Сбросить прогресс просмотра">
+            Сбросить прогресс
+        </button>
     </div>
 
     <div class="container" id="mainContainer">
@@ -83,11 +72,13 @@
 
         <div class="slide-container">
             <div id="slidesContainer"></div>
-            <button class="nav-button prev" onclick="prevSlide()" aria-label="Предыдущий слайд" tabindex="0">←</button>
-            <button class="nav-button next" onclick="nextSlide()" aria-label="Следующий слайд" tabindex="0">→</button>
         </div>
 
-        <button class="back-btn" onclick="closePresentation()" aria-label="Вернуться к списку регионов" tabindex="0">Назад</button>
+        <div class="presentation-controls">
+            <button class="nav-button prev" onclick="prevSlide()" aria-label="Предыдущий слайд" tabindex="0">←</button>
+            <button class="back-btn" onclick="closePresentation()" aria-label="Вернуться к списку регионов" tabindex="0">Назад</button>
+            <button class="nav-button next" onclick="nextSlide()" aria-label="Следующий слайд" tabindex="0">→</button>
+        </div>
     </div>
 
     <div class="final-screen" id="finalScreen">
@@ -108,6 +99,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
 </body>
 </html>

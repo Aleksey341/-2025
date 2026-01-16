@@ -533,26 +533,17 @@ function openPresentation(regionId) {
    ЗАКРЫТИЕ ПРЕЗЕНТАЦИИ
    ======================================== */
 function closePresentation() {
-  const wasKirovPresentation = currentRegion === 'kirov';
-
   document.getElementById('presentation').classList.remove('active');
   currentRegion = null;
 
   // Восстановить видимость основного интерфейса
   const container = document.querySelector('.container');
-  const progressContainer = document.querySelector('.progress-container');
+  const controlButtons = document.getElementById('controlButtons');
   container.style.display = 'block';
-  progressContainer.style.display = 'block';
+  if (controlButtons) controlButtons.style.display = 'flex';
 
   saveProgressToIndexedDB();
   createRegionCards();
-
-  // Если это была презентация карточки руководителя (#43) - показываем финальный экран
-  if (wasKirovPresentation) {
-    setTimeout(() => {
-      showFinalScreen();
-    }, 500);
-  }
 }
 
 /* ========================================
@@ -632,16 +623,6 @@ function updateSlideCounter() {
 function updateProgress() {
   const total = regions.length;
   const viewed = viewedRegions.size;
-  const percentage = (viewed / total) * 100;
-
-  const progressFill = document.getElementById('progressFill');
-  const progressText = document.getElementById('progressText');
-  const progressBar = document.querySelector('.progress-bar');
-
-  progressFill.style.width = `${percentage}%`;
-  progressText.textContent = `Просмотрено: ${viewed} из ${total} регионов`;
-
-  progressBar.setAttribute('aria-valuenow', percentage);
 
   // Когда все регионы просмотрены - разделить карточку Владивостока
   if (viewed === total && !isSplitMode) {
@@ -709,67 +690,8 @@ async function loadSplitModeFromIndexedDB() {
 }
 
 /* ========================================
-   ЗАГРУЗКА СЛАЙДОВ ИЗ РЕПОЗИТОРИЯ
+   СБРОС ПРОГРЕССА
    ======================================== */
-async function loadAllSlides() {
-  const btn = document.querySelector('.service-btn.primary');
-  const originalText = btn ? btn.textContent : '';
-
-  try {
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = 'Загрузка...';
-    }
-
-    // Очищаем кэш перед загрузкой
-    slidesData = {};
-    const transaction = db.transaction(['slides'], 'readwrite');
-    const store = transaction.objectStore('slides');
-    await new Promise((resolve, reject) => {
-      const request = store.clear();
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-
-    // Загружаем слайды из репозитория
-    await preloadAllSlidesFromRepo();
-
-    // Обновляем карточки
-    createRegionCards();
-
-    console.log('All slides loaded successfully');
-    alert('Слайды успешно загружены!');
-  } catch (error) {
-    console.error('Error loading slides:', error);
-    alert('Ошибка при загрузке слайдов. Проверьте консоль.');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = originalText;
-    }
-  }
-}
-
-/* ========================================
-   СБРОС СЛАЙДОВ/ПРОГРЕССА
-   ======================================== */
-async function resetSlides() {
-  if (!confirm('Вы уверены, что хотите удалить все загруженные/кэшированные слайды?')) return;
-
-  slidesData = {};
-
-  const transaction = db.transaction(['slides'], 'readwrite');
-  const store = transaction.objectStore('slides');
-  const request = store.clear();
-
-  request.onsuccess = async () => {
-    console.log('All slides cleared');
-    createRegionCards();
-    // После очистки снова подтянем из репо
-    await preloadAllSlidesFromRepo();
-  };
-}
-
 async function resetProgress() {
   if (!confirm('Вы уверены, что хотите сбросить прогресс просмотра?')) return;
 
@@ -782,12 +704,7 @@ async function resetProgress() {
 
   request.onsuccess = () => {
     console.log('Progress cleared');
-
-    updateProgress();
     createRegionCards();
-
-    // Показать вступительный экран
-    showIntroScreen();
   };
 }
 
@@ -798,7 +715,7 @@ function showIntroScreen() {
   const introScreen = document.getElementById('introScreen');
   const logo = document.getElementById('logo');
   const heroTitle = document.getElementById('heroTitle');
-  const progressContainer = document.getElementById('progressContainer');
+  const controlButtons = document.getElementById('controlButtons');
   const mainContainer = document.getElementById('mainContainer');
   const container = document.querySelector('.container');
 
@@ -806,12 +723,12 @@ function showIntroScreen() {
   document.body.classList.add('intro-active');
 
   container.style.display = 'none';
-  progressContainer.style.display = 'none';
+  if (controlButtons) controlButtons.style.display = 'none';
 
-  logo.classList.add('hidden-on-intro');
-  heroTitle.classList.add('hidden-on-intro');
-  progressContainer.classList.add('hidden-on-intro');
-  mainContainer.classList.add('hidden-on-intro');
+  if (logo) logo.classList.add('hidden-on-intro');
+  if (heroTitle) heroTitle.classList.add('hidden-on-intro');
+  if (controlButtons) controlButtons.classList.add('hidden-on-intro');
+  if (mainContainer) mainContainer.classList.add('hidden-on-intro');
 
   document.addEventListener('keydown', handleIntroKeyPress);
 }
@@ -876,11 +793,11 @@ function handleSwipe() {
 /* ========================================
    ВСТУПИТЕЛЬНЫЙ ЭКРАН (скрыть)
    ======================================== */
-function hideIntroScreen() {
+async function hideIntroScreen() {
   const introScreen = document.getElementById('introScreen');
   const logo = document.getElementById('logo');
   const heroTitle = document.getElementById('heroTitle');
-  const progressContainer = document.getElementById('progressContainer');
+  const controlButtons = document.getElementById('controlButtons');
   const mainContainer = document.getElementById('mainContainer');
   const container = document.querySelector('.container');
 
@@ -888,14 +805,18 @@ function hideIntroScreen() {
   document.body.classList.remove('intro-active');
 
   container.style.display = 'block';
-  progressContainer.style.display = 'block';
+  if (controlButtons) controlButtons.style.display = 'flex';
 
-  logo.classList.remove('hidden-on-intro');
-  heroTitle.classList.remove('hidden-on-intro');
-  progressContainer.classList.remove('hidden-on-intro');
-  mainContainer.classList.remove('hidden-on-intro');
+  if (logo) logo.classList.remove('hidden-on-intro');
+  if (heroTitle) heroTitle.classList.remove('hidden-on-intro');
+  if (controlButtons) controlButtons.classList.remove('hidden-on-intro');
+  if (mainContainer) mainContainer.classList.remove('hidden-on-intro');
 
   document.removeEventListener('keydown', handleIntroKeyPress);
+
+  // Автоматическая загрузка слайдов при клике на начальный экран
+  await preloadAllSlidesFromRepo();
+  createRegionCards();
 }
 
 function handleIntroKeyPress(event) {
@@ -918,25 +839,21 @@ async function init() {
     await loadProgressFromIndexedDB();
     await loadSplitModeFromIndexedDB();
 
-    // Сначала рисуем сетку (как было)
+    // Сначала рисуем сетку
     createRegionCards();
-    updateProgress();
 
-    // Затем автоматически подтягиваем слайды из репозитория (без кнопок)
-    await preloadAllSlidesFromRepo();
-
-    // Скрыть основные элементы при загрузке (как было)
+    // Скрыть основные элементы при загрузке
     const logo = document.getElementById('logo');
     const heroTitle = document.getElementById('heroTitle');
-    const progressContainer = document.getElementById('progressContainer');
+    const controlButtons = document.getElementById('controlButtons');
     const mainContainer = document.getElementById('mainContainer');
 
     document.body.classList.add('intro-active');
 
-    logo.classList.add('hidden-on-intro');
-    heroTitle.classList.add('hidden-on-intro');
-    progressContainer.classList.add('hidden-on-intro');
-    mainContainer.classList.add('hidden-on-intro');
+    if (logo) logo.classList.add('hidden-on-intro');
+    if (heroTitle) heroTitle.classList.add('hidden-on-intro');
+    if (controlButtons) controlButtons.classList.add('hidden-on-intro');
+    if (mainContainer) mainContainer.classList.add('hidden-on-intro');
 
     document.addEventListener('keydown', handleIntroKeyPress);
 
