@@ -100,7 +100,7 @@ async function assetExists(url) {
    ======================================== */
 function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('PresentationDB', 3);
+    const request = indexedDB.open('PresentationDB', 4);
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
