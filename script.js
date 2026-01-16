@@ -286,7 +286,17 @@ async function preloadAllSlidesFromRepo() {
    ======================================== */
 function createRegionCards() {
   const grid = document.getElementById('bentoGrid');
+  const heroTitle = document.getElementById('heroTitle');
+
+  // Сохраняем heroTitle перед очисткой
+  const heroTitleClone = heroTitle ? heroTitle.cloneNode(true) : null;
+
   grid.innerHTML = '';
+
+  // Восстанавливаем heroTitle первым элементом
+  if (heroTitleClone) {
+    grid.appendChild(heroTitleClone);
+  }
 
   // Если в режиме разделения - добавляем класс к сетке
   if (isSplitMode) {
