@@ -364,7 +364,7 @@ body.intro-active .snowflakes-container {
     font-size: clamp(4.536rem, 8.316vw, 8.316rem);
 
     margin-top: -0.3em;
-    margin-left: 14ch;
+    margin-left: 9ch;
 
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
     transform: rotate(-2deg);
@@ -1766,3 +1766,4 @@ body.intro-active .snowflakes-container {
     outline: 3px solid var(--color-primary);
     outline-offset: 2px;
 }
+
