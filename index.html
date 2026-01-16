@@ -18,7 +18,7 @@
     <link rel="preload" href="christmas-background1.webp" as="image" type="image/webp">
     <link rel="preload" href="christmas-background3.webp" as="image" type="image/webp">
 
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
 
     <!-- WebP Detection Script (inline для быстрого выполнения) -->
     <script>
@@ -49,11 +49,6 @@
         <img src="logo.png" alt="Ростелеком" class="logo" id="logo" aria-label="Логотип Ростелеком" loading="lazy">
     </picture>
 
-    <h1 class="hero-title" id="heroTitle" aria-label="Новогодний адвент">
-        <span class="hero-title__top">НОВОГОДНИЙ</span>
-        <span class="hero-title__bottom">адвент</span>
-    </h1>
-
     <div class="progress-container" id="progressContainer" role="complementary" aria-label="Прогресс просмотра">
         <div class="progress-info">
             <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -75,7 +70,12 @@
     </div>
 
     <div class="container" id="mainContainer">
-        <div class="bento-grid" id="bentoGrid" role="main" aria-label="Регионы для просмотра"></div>
+        <div class="bento-grid" id="bentoGrid" role="main" aria-label="Регионы для просмотра">
+            <h1 class="hero-title" id="heroTitle" aria-label="Новогодний адвент">
+                <span class="hero-title__top">НОВОГОДНИЙ</span>
+                <span class="hero-title__bottom">адвент</span>
+            </h1>
+        </div>
     </div>
 
     <div class="fullscreen-presentation" id="presentation" role="dialog" aria-modal="true" aria-label="Просмотр слайдов">
