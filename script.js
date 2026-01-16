@@ -15,85 +15,175 @@ let floatingWishesInterval = null; // Интервал для плавающих
 const WISH_PAGE_URL = 'https://aleksey341.github.io/-2025/wish.html';
 const QR_IMAGE_URL = './qr.png';
 
-/**
- * Базовый URL для ассетов (папки и картинки) относительно текущей страницы.
- * Если index.html лежит в корне репозитория, то получится:
- * https://aleksey341.github.io/-2025/
- */
-const ASSETS_BASE_URL = new URL('.', window.location.href).href;
+/* ========================================
+   НОВОЕ: НАСТРОЙКИ ЗАГРУЗКИ СЛАЙДОВ ИЗ РЕПОЗИТОРИЯ
+   ======================================== */
+const PAGES_BASE_URL = 'https://aleksey341.github.io/-2025'; // базовый URL вашего GitHub Pages
+const SLIDE_EXT = 'png';       // формат слайдов
+const SLIDE_PAD = 2;           // 01, 02...
+const SLIDE_MAX_TRY = 250;     // максимум попыток, чтобы не уйти в бесконечность
 
-// Настройки авто-поиска слайдов в папке
-const SLIDE_FILE_EXT = 'png';
-const SLIDE_PAD = 2;               // 01.png, 02.png
-const SLIDE_MAX = 120;             // максимум попыток (на всякий)
-const SLIDE_STOP_AFTER_MISSES = 5; // остановиться после N подряд промахов, если уже нашли хотя бы 1
+// защита от параллельной загрузки одного и того же региона
+const repoLoadInFlight = new Map(); // regionId -> Promise
+
+function pad2(n) {
+  return String(n).padStart(SLIDE_PAD, '0');
+}
+
+// regionId используется для CSS и логики; folder — для пути в репозитории
+function getRegionFolder(regionId) {
+  const r = regions.find(x => x.id === regionId);
+  return (r && r.folder) ? r.folder : regionId;
+}
+
+function buildSlideUrl(regionId, index1based) {
+  const folder = getRegionFolder(regionId);
+  const file = `${pad2(index1based)}.${SLIDE_EXT}`;
+  // папки у вас лежат в корне репозитория: /Samara/01.png
+  return `${PAGES_BASE_URL}/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`;
+}
+
+async function urlExists(url) {
+  // GitHub Pages обычно поддерживает HEAD, но на всякий случай есть fallback на GET
+  try {
+    const r = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+    return r.ok;
+  } catch (_) {
+    try {
+      const r2 = await fetch(url, { method: 'GET', cache: 'no-store' });
+      return r2.ok;
+    } catch (__) {
+      return false;
+    }
+  }
+}
+
+async function loadSlidesFromRepo(regionId) {
+  // если уже есть — ничего не делаем
+  if (slidesData[regionId] && slidesData[regionId].length > 0) {
+    return;
+  }
+
+  // если уже грузится — ждём
+  if (repoLoadInFlight.has(regionId)) {
+    await repoLoadInFlight.get(regionId);
+    return;
+  }
+
+  const p = (async () => {
+    const collected = [];
+    for (let i = 1; i <= SLIDE_MAX_TRY; i++) {
+      const url = buildSlideUrl(regionId, i);
+      const ok = await urlExists(url);
+      if (!ok) break;
+      collected.push({ name: `${pad2(i)}.${SLIDE_EXT}`, data: url });
+    }
+
+    if (!collected.length) {
+      const folder = getRegionFolder(regionId);
+      throw new Error(
+        `Не найдены слайды в папке "${folder}". Ожидаю файлы вида 01.${SLIDE_EXT}, 02.${SLIDE_EXT}... ` +
+        `Проверьте: регистр папки/файлов и что они доступны по Pages.`
+      );
+    }
+
+    slidesData[regionId] = collected;
+
+    // сортировка как и раньше (на всякий случай)
+    slidesData[regionId].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    await saveToIndexedDB(regionId);
+  })();
+
+  repoLoadInFlight.set(regionId, p);
+
+  try {
+    await p;
+  } finally {
+    repoLoadInFlight.delete(regionId);
+  }
+}
 
 /* ========================================
    Пожелания для эффекта мелькания
    ======================================== */
 const wishesForAnimation = [
-  "Пусть работа приносит смысл",
-  "Пусть усилия замечают и ценят",
-  "Пусть проекты завершаются вовремя",
-  "Пусть рядом будут сильные союзники",
-  "Пусть деньги приходят регулярно",
-  "Пусть доход растёт быстрее расходов",
-  "Пусть дом будет местом силы",
-  "Пусть семья будет спокойным тылом",
-  "Пусть здоровье будет крепким",
-  "Пусть энергии хватает на главное",
-  "Пусть Новый год принесёт удачу",
-  "Пусть год подарит возможности",
-  "Пусть мечты становятся реальностью",
-  "Пусть вы гордитесь собой чаще",
-  "Пусть вам везёт по-крупному",
-  "Пусть удача будет вашим фоном",
-  "Пусть всё важное складывается",
-  "Пусть год будет счастливым"
+  "Пусть дисциплина будет мягкой, но рабочей 📌",
+  "Пусть мотивация приходит изнутри 🔥",
+  "Пусть вы чаще чувствуете уверенность 🧷",
+  "Пусть решения даются легко 🧩",
+  "Пусть вы не откладываете важное ⏭️",
+  "Пусть каждый месяц приносит маленькую победу 🏆",
+  "Пусть год станет для вас точкой роста 🌱",
+  "Пусть ваши навыки монетизируются достойно 💼",
+  "Пусть работа перестанет быть «вечно срочной» 🧯",
+  "Пусть вы находите лучшие пути, а не длинные 🧭",
+  "Пусть всё сложное становится простым 🧊",
+  "Пусть ваши письма читают внимательно 📩",
+  "Пусть дедлайны будут управляемыми 🗓️",
+  "Пусть вы защищаете границы спокойно 🛡️",
+  "Пусть решения принимаются быстрее ⚙️",
+  "Пусть вы меньше объясняетесь и больше делаете 🛠️",
+  "Пусть уважение к вам будет нормой 🤝",
+  "Пусть ваши деньги работают без нервов 🧾",
+  "Пусть финансовые цели приближаются каждый месяц 🎯",
+  "Пусть доходы расширяют вашу свободу 🗝️",
+  "Пусть покупки приносят радость, а не сожаление 🛍️",
+  "Пусть вы находите выгодные варианты легко 🔎",
+  "Пусть долги исчезают без драмы 🧽",
+  "Пусть в бюджете будет место удовольствиям 🍰",
+  "Пусть вы чувствуете контроль над финансами 📌",
+  "Пусть год принесёт приятный прирост 📈",
+  "Пусть ваша ценность растёт и на рынке, и внутри 💎",
+  "Пусть дом будет наполнен светом 🕯️",
+  "Пусть в доме будет место тишине 🤫",
+  "Пусть утро начинается без спешки 🌅",
+  "Пусть вечер заканчивается спокойствием 🌙",
+  "Пусть техника не ломается, а служит 🔌",
+  "Пусть в доме всегда есть вкусный чай 🍵",
+  "Пусть ваш уголок будет идеальным убежищем 🪟",
+  "Пусть в доме пахнет праздником 🎄",
+  "Пусть в доме чаще звучит «как хорошо» 🤍",
+  "Пусть уют создаётся легко 🧸",
+  "Пусть любовь будет зрелой и тёплой ❤️",
+  "Пусть забота будет взаимной 🤲",
+  "Пусть вы слышите друг друга 👂",
+  "Пусть близкие будут здоровы и спокойны 🫶",
+  "Пусть в семье будет больше поддержки 🤝",
+  "Пусть семейные праздники будут радостными 🎊",
+  "Пусть ваши слова дома будут мягче 🕊️",
+  "Пусть у вас будет время на разговоры ☕",
+  "Пусть недосказанности исчезнут 🧩",
+  "Пусть отношения станут проще и честнее 💬",
+  "Пусть друзья появляются вовремя 🧭",
+  "Пусть люди вас радуют, а не утомляют 🌿",
+  "Пусть вас окружают надежные профессионалы 🧠",
+  "Пусть вы встречаете доброту чаще 🤍",
+  "Пусть вы легко находите общий язык 🗣️",
+  "Пусть ваша репутация помогает вам ⭐"
 ];
 
-/**
- * ВАЖНО:
- * - folder: имя папки в репозитории (в корне), где лежат 01.png, 02.png...
- * - ornament: как и было (для ornament_*.png)
- * - id/классы/порядок — не меняем (это влияет на бенто-сетку и CSS)
- */
+/*
+  ВАЖНО:
+  - region.id оставляем как было (это CSS-раскладка bento)
+  - добавьте region.folder, чтобы указать папку в репозитории, если она не совпадает с id
+
+  Пример:
+  { id:'region3', ..., folder:'Samara' }
+*/
 const regions = [
-  { id: 'nn',         name: 'ЯНАО',             code: '#89', ornament: 'yanao',      folder: 'ЯНАО' },
-  { id: 'vladivostok',name: 'Владивосток',      code: '#25', ornament: 'vladivostok',folder: 'Vladivostok' },
-  { id: 'yanao',      name: 'Новосибирск',      code: '#54', ornament: 'Novosib',    folder: 'Novosib' },
-  { id: 'krasnodar',  name: 'Нижний Новгород',  code: '#52', ornament: 'nn',         folder: 'NN' },
-  { id: 'region1',    name: 'Краснодар',        code: '#23', ornament: 'krasnodar',  folder: 'Krasnodar' },
-  { id: 'region2',    name: 'Санкт-Петербург',  code: '#78', ornament: 'region4',    folder: 'SPB' },
-  { id: 'region3',    name: 'Самара',           code: '#63', ornament: 'samara',     folder: 'Samara' },
-  { id: 'region4',    name: 'Арх',              code: '#29', ornament: 'Арх',        folder: 'Arhangelsk' }
+  { id: 'nn', name: 'ЯНАО', code: '#89', ornament: 'yanao', folder: 'Jamal' },
+  { id: 'vladivostok', name: 'Владивосток', code: '#25', ornament: 'vladivostok', folder: 'Vladivostok' },
+  { id: 'yanao', name: 'Новосибирск', code: '#54', ornament: 'Novosib', folder: 'Novosib' },
+  { id: 'krasnodar', name: 'Нижний Новгород', code: '#52', ornament: 'nn', folder: 'NN' },
+  { id: 'region1', name: 'Краснодар', code: '#23', ornament: 'krasnodar', folder: 'Krasnodar' },
+  { id: 'region2', name: 'Санкт-Петербург', code: '#78', ornament: 'region4', folder: 'SPB' },
+  { id: 'region3', name: 'Самара', code: '#63', ornament: 'samara', folder: 'Samara' },
+  { id: 'region4', name: 'Арх', code: '#29', ornament: 'Арх', folder: 'Arhangelsk' }
 ];
 
 // Скрытый регион Кировская область (появляется после разделения)
 const kirovRegion = { id: 'kirov', name: 'Кировская область', code: '#43', ornament: 'kirov', folder: 'Kirovskaja' };
-
-/* ========================================
-   ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ URL/ПРОВЕРКИ
-   ======================================== */
-function padNumber(num, size = 2) {
-  return String(num).padStart(size, '0');
-}
-
-function buildUrlFromSegments(...segments) {
-  // Кодируем каждый сегмент отдельно (важно для кириллицы в папках)
-  const encoded = segments.map(s => encodeURIComponent(String(s))).join('/');
-  return ASSETS_BASE_URL + encoded;
-}
-
-async function assetExists(url) {
-  // GitHub Pages обычно поддерживает HEAD. Если вдруг нет — упадём в false.
-  try {
-    const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-    return res.ok;
-  } catch (e) {
-    return false;
-  }
-}
 
 /* ========================================
    INDEXEDDB ИНИЦИАЛИЗАЦИЯ
@@ -218,67 +308,19 @@ async function loadProgressFromIndexedDB() {
 }
 
 /* ========================================
-   АВТОЗАГРУЗКА СЛАЙДОВ ИЗ РЕПОЗИТОРИЯ (GitHub Pages)
+   ЗАГРУЗКА СЛАЙДОВ ДЛЯ РЕГИОНА (БЫЛО uploadForRegion -> СТАЛО: загрузка из репозитория)
    ======================================== */
-async function loadRegionSlidesFromRepo(region) {
-  const regionId = region.id;
-  const folder = region.folder;
+async function uploadForRegion(regionId, event) {
+  event.stopPropagation();
 
-  if (!folder) return false;
-
-  // Если уже есть слайды (из IndexedDB) — не перезагружаем
-  if (slidesData[regionId] && slidesData[regionId].length > 0) {
-    return true;
+  try {
+    // грузим из GitHub Pages (папка региона)
+    await loadSlidesFromRepo(regionId);
+    createRegionCards();
+  } catch (err) {
+    console.error(err);
+    alert(err.message || String(err));
   }
-
-  const found = [];
-  let missesInRow = 0;
-  let hasAny = false;
-
-  for (let i = 1; i <= SLIDE_MAX; i++) {
-    const fileName = `${padNumber(i, SLIDE_PAD)}.${SLIDE_FILE_EXT}`;
-    const url = buildUrlFromSegments(folder, fileName);
-
-    const exists = await assetExists(url);
-
-    if (exists) {
-      hasAny = true;
-      missesInRow = 0;
-      found.push({ name: fileName, data: url });
-    } else {
-      missesInRow++;
-      // Если уже нашли хотя бы один файл и дальше идёт серия 404 — останавливаемся
-      if (hasAny && missesInRow >= SLIDE_STOP_AFTER_MISSES) break;
-    }
-  }
-
-  if (found.length > 0) {
-    found.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-    slidesData[regionId] = found;
-    await saveToIndexedDB(regionId);
-    return true;
-  }
-
-  // Если ничего не нашли — фиксируем пустым массивом, чтобы не дергать HEAD бесконечно
-  slidesData[regionId] = [];
-  await saveToIndexedDB(regionId);
-  return false;
-}
-
-async function preloadAllSlidesFromRepo() {
-  const all = [...regions, kirovRegion];
-
-  // Последовательно, чтобы не устроить шторм из HEAD-запросов
-  for (const r of all) {
-    try {
-      await loadRegionSlidesFromRepo(r);
-    } catch (e) {
-      console.warn('Repo preload failed for region:', r.id, e);
-    }
-  }
-
-  // Перерисовать карточки, чтобы миниатюры появились автоматически
-  createRegionCards();
 }
 
 /* ========================================
@@ -321,7 +363,7 @@ function createRegionCards() {
 }
 
 /* ========================================
-   ОДНА КАРТОЧКА РЕГИОНА
+   СОЗДАНИЕ ОДНОЙ КАРТОЧКИ РЕГИОНА
    ======================================== */
 function createRegionCard(grid, region, forceInactive = false, cardIndex = 0) {
   const item = document.createElement('div');
@@ -342,11 +384,18 @@ function createRegionCard(grid, region, forceInactive = false, cardIndex = 0) {
 
   const hasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
 
-  // Миниатюра первого слайда (как было)
+  // Миниатюра первого слайда (ЛОГИКА ОСТАЛАСЬ КАК БЫЛО)
   let thumbnail = '';
   if (hasSlides) {
     thumbnail = slidesData[region.id][0].data;
   }
+
+  // UI кнопки оставляем как было, но теперь она грузит из репозитория
+  const uploadButtonHTML = hasSlides ? '' : `
+    <button class="upload-region-btn" data-region-id="${region.id}" aria-label="Загрузить слайды для ${region.name}">
+      📁 Загрузить слайды
+    </button>
+  `;
 
   item.innerHTML = `
     <div class="card-inner">
@@ -357,7 +406,7 @@ function createRegionCard(grid, region, forceInactive = false, cardIndex = 0) {
         <img src="ornament_${region.ornament || region.id}.png" class="region-ornament" alt="${region.name}" onerror="this.style.display='none'">
       </div>
       <div class="card-back">
-        ${hasSlides ? `<img src="${thumbnail}" class="region-thumbnail" alt="${region.name}">` : ``}
+        ${hasSlides ? `<img src="${thumbnail}" class="region-thumbnail" alt="${region.name}">` : uploadButtonHTML}
       </div>
     </div>
   `;
@@ -365,33 +414,29 @@ function createRegionCard(grid, region, forceInactive = false, cardIndex = 0) {
   // События клика и клавиатуры (если не принудительно неактивна)
   if (!forceInactive) {
     const openPresentationHandler = async (e) => {
+      // Игнорировать клики на кнопку загрузки
+      if (e.target.classList.contains('upload-region-btn') || e.target.closest('.upload-region-btn')) {
+        return;
+      }
+
       // Не реагировать на просмотренные
-      if (viewedRegions.has(region.id)) return;
+      if (viewedRegions.has(region.id)) {
+        return;
+      }
 
       // Переворот карточки
       if (!item.classList.contains('flipped')) {
         item.classList.add('flipped');
-        return;
-      }
-
-      // Второй клик — открытие презентации
-      // Если слайдов еще нет — пробуем подтянуть из репозитория и затем открыть
-      const nowHasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
-
-      if (!nowHasSlides) {
-        const ok = await loadRegionSlidesFromRepo(region);
-        createRegionCards(); // обновить миниатюры, если появились
-        if (!ok) {
-          // Ничего не нашли — просто не открываем
-          return;
+      } else {
+        // Второй клик - открытие презентации (ЛОГИКА КАК БЫЛО)
+        if (hasSlides) {
+          openPresentation(region.id);
+          item.classList.remove('flipped');
         }
       }
-
-      openPresentation(region.id);
-      item.classList.remove('flipped');
     };
 
-    item.addEventListener('click', openPresentationHandler);
+    item.addEventListener('click', (e) => { openPresentationHandler(e); });
 
     item.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -399,13 +444,26 @@ function createRegionCard(grid, region, forceInactive = false, cardIndex = 0) {
         openPresentationHandler(e);
       }
     });
+
+    // Обработчик для кнопки загрузки (теперь грузит из репозитория)
+    if (!hasSlides) {
+      const uploadBtn = item.querySelector('.upload-region-btn');
+      if (uploadBtn) {
+        uploadBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          await uploadForRegion(region.id, e);
+        }, true);
+      }
+    }
   }
 
   grid.appendChild(item);
 }
 
 /* ========================================
-   РАЗДЕЛЁННАЯ КАРТОЧКА
+   СОЗДАНИЕ РАЗДЕЛЁННОЙ КАРТОЧКИ
    ======================================== */
 function createSplitCard(grid, region, isLeft, cardIndex = 0) {
   const item = document.createElement('div');
@@ -431,11 +489,17 @@ function createSplitCard(grid, region, isLeft, cardIndex = 0) {
 
   const hasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
 
-  // Миниатюра первого слайда (как было)
+  // Миниатюра первого слайда (ЛОГИКА ОСТАЛАСЬ КАК БЫЛО)
   let thumbnail = '';
   if (hasSlides) {
     thumbnail = slidesData[region.id][0].data;
   }
+
+  const uploadButtonHTML = hasSlides ? '' : `
+    <button class="upload-region-btn" data-region-id="${region.id}" aria-label="Загрузить слайды для ${region.name}">
+      📁 Загрузить слайды
+    </button>
+  `;
 
   item.innerHTML = `
     <div class="card-inner">
@@ -446,31 +510,30 @@ function createSplitCard(grid, region, isLeft, cardIndex = 0) {
         <img src="ornament_${region.ornament || region.id}.png" class="region-ornament" alt="${region.name}" onerror="this.style.display='none'">
       </div>
       <div class="card-back">
-        ${hasSlides ? `<img src="${thumbnail}" class="region-thumbnail" alt="${region.name}">` : ``}
+        ${hasSlides ? `<img src="${thumbnail}" class="region-thumbnail" alt="${region.name}">` : uploadButtonHTML}
       </div>
     </div>
   `;
 
   // События только для активной карточки (Кировская)
   if (!isInactive) {
-    const openPresentationHandler = async (e) => {
-      if (viewedRegions.has(region.id)) return;
-
-      if (!item.classList.contains('flipped')) {
-        item.classList.add('flipped');
+    const openPresentationHandler = (e) => {
+      if (e.target.classList.contains('upload-region-btn') || e.target.closest('.upload-region-btn')) {
         return;
       }
 
-      const nowHasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
-
-      if (!nowHasSlides) {
-        const ok = await loadRegionSlidesFromRepo(region);
-        createRegionCards();
-        if (!ok) return;
+      if (viewedRegions.has(region.id)) {
+        return;
       }
 
-      openPresentation(region.id);
-      item.classList.remove('flipped');
+      if (!item.classList.contains('flipped')) {
+        item.classList.add('flipped');
+      } else {
+        if (hasSlides) {
+          openPresentation(region.id);
+          item.classList.remove('flipped');
+        }
+      }
     };
 
     item.addEventListener('click', openPresentationHandler);
@@ -481,6 +544,18 @@ function createSplitCard(grid, region, isLeft, cardIndex = 0) {
         openPresentationHandler(e);
       }
     });
+
+    if (!hasSlides) {
+      const uploadBtn = item.querySelector('.upload-region-btn');
+      if (uploadBtn) {
+        uploadBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          await uploadForRegion(region.id, e);
+        }, true);
+      }
+    }
   }
 
   grid.appendChild(item);
@@ -520,7 +595,7 @@ function openPresentation(regionId) {
 }
 
 /* ========================================
-   ЗАКРЫТИЕ ПРЕЗЕНТАЦИИ
+   ЗАКРЫТИЕ ПРЕЗЕНЕНТАЦИИ
    ======================================== */
 function closePresentation() {
   const wasKirovPresentation = currentRegion === 'kirov';
@@ -575,12 +650,13 @@ function updateNavigationButtons() {
 }
 
 /* ========================================
-   СЛЕДУЮЩИЙ/ПРЕДЫДУЩИЙ СЛАЙД
+   СЛЕДУЮЩИЙ СЛАЙД
    ======================================== */
 function nextSlide() {
   if (!currentRegion) return;
 
   const slides = document.querySelectorAll('.slide');
+
   if (currentSlideIndex >= slides.length - 1) return;
 
   slides[currentSlideIndex].classList.remove('active');
@@ -591,10 +667,14 @@ function nextSlide() {
   updateNavigationButtons();
 }
 
+/* ========================================
+   ПРЕДЫДУЩИЙ СЛАЙД
+   ======================================== */
 function prevSlide() {
   if (!currentRegion) return;
 
   const slides = document.querySelectorAll('.slide');
+
   if (currentSlideIndex <= 0) return;
 
   slides[currentSlideIndex].classList.remove('active');
@@ -662,7 +742,7 @@ function splitVladivostokCard() {
 }
 
 /* ========================================
-   СОХРАНЕНИЕ/ЗАГРУЗКА РЕЖИМА РАЗДЕЛЕНИЯ
+   СОХРАНЕНИЕ РЕЖИМА РАЗДЕЛЕНИЯ
    ======================================== */
 async function saveSplitModeToIndexedDB() {
   return new Promise((resolve, reject) => {
@@ -681,6 +761,9 @@ async function saveSplitModeToIndexedDB() {
   });
 }
 
+/* ========================================
+   ЗАГРУЗКА РЕЖИМА РАЗДЕЛЕНИЯ
+   ======================================== */
 async function loadSplitModeFromIndexedDB() {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(['progress'], 'readonly');
@@ -699,10 +782,10 @@ async function loadSplitModeFromIndexedDB() {
 }
 
 /* ========================================
-   СБРОС СЛАЙДОВ/ПРОГРЕССА
+   СБРОС СЛАЙДОВ
    ======================================== */
 async function resetSlides() {
-  if (!confirm('Вы уверены, что хотите удалить все загруженные/кэшированные слайды?')) return;
+  if (!confirm('Вы уверены, что хотите удалить все загруженные слайды?')) return;
 
   slidesData = {};
 
@@ -710,14 +793,15 @@ async function resetSlides() {
   const store = transaction.objectStore('slides');
   const request = store.clear();
 
-  request.onsuccess = async () => {
+  request.onsuccess = () => {
     console.log('All slides cleared');
     createRegionCards();
-    // После очистки снова подтянем из репо
-    await preloadAllSlidesFromRepo();
   };
 }
 
+/* ========================================
+   СБРОС ПРОГРЕССА
+   ======================================== */
 async function resetProgress() {
   if (!confirm('Вы уверены, что хотите сбросить прогресс просмотра?')) return;
 
@@ -750,17 +834,23 @@ function showIntroScreen() {
   const mainContainer = document.getElementById('mainContainer');
   const container = document.querySelector('.container');
 
+  // Показать вступительный экран
   introScreen.classList.remove('hidden');
+
+  // Добавить класс intro-active к body
   document.body.classList.add('intro-active');
 
+  // Скрыть основные контейнеры
   container.style.display = 'none';
   progressContainer.style.display = 'none';
 
+  // Скрыть основные элементы
   logo.classList.add('hidden-on-intro');
   heroTitle.classList.add('hidden-on-intro');
   progressContainer.classList.add('hidden-on-intro');
   mainContainer.classList.add('hidden-on-intro');
 
+  // Добавить обработчик клавиатуры для вступительного экрана
   document.addEventListener('keydown', handleIntroKeyPress);
 }
 
@@ -770,6 +860,7 @@ function showIntroScreen() {
 document.addEventListener('keydown', (e) => {
   const presentationActive = document.getElementById('presentation').classList.contains('active');
 
+  // Навигация по слайдам региона
   if (presentationActive) {
     switch(e.key) {
       case 'ArrowRight':
@@ -791,13 +882,14 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ========================================
-   TOUCH-СОБЫТИЯ
+   ПОДДЕРЖКА TOUCH-СОБЫТИЙ
    ======================================== */
 let touchStartX = 0;
 let touchEndX = 0;
 
 document.addEventListener('touchstart', (e) => {
   const presentationActive = document.getElementById('presentation').classList.contains('active');
+
   if (presentationActive) {
     touchStartX = e.changedTouches[0].screenX;
   }
@@ -805,6 +897,7 @@ document.addEventListener('touchstart', (e) => {
 
 document.addEventListener('touchend', (e) => {
   const presentationActive = document.getElementById('presentation').classList.contains('active');
+
   if (presentationActive) {
     touchEndX = e.changedTouches[0].screenX;
     handleSwipe();
@@ -817,12 +910,17 @@ function handleSwipe() {
 
   if (Math.abs(diff) < swipeThreshold) return;
 
-  if (diff > 0) nextSlide();
-  else prevSlide();
+  if (diff > 0) {
+    // Свайп влево - следующий слайд
+    nextSlide();
+  } else {
+    // Свайп вправо - предыдущий слайд
+    prevSlide();
+  }
 }
 
 /* ========================================
-   ВСТУПИТЕЛЬНЫЙ ЭКРАН (скрыть)
+   ВСТУПИТЕЛЬНЫЙ ЭКРАН
    ======================================== */
 function hideIntroScreen() {
   const introScreen = document.getElementById('introScreen');
@@ -832,20 +930,27 @@ function hideIntroScreen() {
   const mainContainer = document.getElementById('mainContainer');
   const container = document.querySelector('.container');
 
+  // Скрыть вступительный экран
   introScreen.classList.add('hidden');
+
+  // Убрать класс intro-active у body
   document.body.classList.remove('intro-active');
 
+  // Восстановить видимость основных контейнеров
   container.style.display = 'block';
   progressContainer.style.display = 'block';
 
+  // Показать основные элементы
   logo.classList.remove('hidden-on-intro');
   heroTitle.classList.remove('hidden-on-intro');
   progressContainer.classList.remove('hidden-on-intro');
   mainContainer.classList.remove('hidden-on-intro');
 
+  // Удалить обработчик клавиатуры
   document.removeEventListener('keydown', handleIntroKeyPress);
 }
 
+// Обработчик клавиатуры для вступительного экрана
 function handleIntroKeyPress(event) {
   const introScreen = document.getElementById('introScreen');
   if (introScreen && !introScreen.classList.contains('hidden')) {
@@ -857,7 +962,7 @@ function handleIntroKeyPress(event) {
 }
 
 /* ========================================
-   ИНИЦИАЛИЗАЦИЯ
+   ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
    ======================================== */
 async function init() {
   try {
@@ -865,20 +970,16 @@ async function init() {
     await loadFromIndexedDB();
     await loadProgressFromIndexedDB();
     await loadSplitModeFromIndexedDB();
-
-    // Сначала рисуем сетку (как было)
     createRegionCards();
     updateProgress();
 
-    // Затем автоматически подтягиваем слайды из репозитория (без кнопок)
-    await preloadAllSlidesFromRepo();
-
-    // Скрыть основные элементы при загрузке (как было)
+    // Скрыть основные элементы при загрузке
     const logo = document.getElementById('logo');
     const heroTitle = document.getElementById('heroTitle');
     const progressContainer = document.getElementById('progressContainer');
     const mainContainer = document.getElementById('mainContainer');
 
+    // Добавить класс intro-active к body
     document.body.classList.add('intro-active');
 
     logo.classList.add('hidden-on-intro');
@@ -886,6 +987,7 @@ async function init() {
     progressContainer.classList.add('hidden-on-intro');
     mainContainer.classList.add('hidden-on-intro');
 
+    // Добавить обработчик клавиатуры для вступительного экрана
     document.addEventListener('keydown', handleIntroKeyPress);
 
     console.log('App initialized successfully');
@@ -896,22 +998,24 @@ async function init() {
 }
 
 /* ========================================
-   ЗВЁЗДЫ/СНЕЖИНКИ (как было)
+   ГЕНЕРАЦИЯ МЕРЦАЮЩИХ ЗВЁЗД
    ======================================== */
 function createStars() {
   const container = document.getElementById('starsContainer');
   if (!container) return;
 
-  const starCount = 150;
-  const sizes = ['tiny', 'tiny', 'tiny', 'small', 'small', 'medium', 'large'];
+  const starCount = 150; // Количество звёзд
+  const sizes = ['tiny', 'tiny', 'tiny', 'small', 'small', 'medium', 'large']; // Больше маленьких
 
   for (let i = 0; i < starCount; i++) {
     const star = document.createElement('div');
     star.className = `star ${sizes[Math.floor(Math.random() * sizes.length)]}`;
 
+    // Случайное положение
     star.style.left = `${Math.random() * 100}%`;
     star.style.top = `${Math.random() * 100}%`;
 
+    // Случайная длительность и задержка мерцания
     star.style.setProperty('--twinkle-duration', `${1.5 + Math.random() * 3}s`);
     star.style.setProperty('--twinkle-delay', `${Math.random() * 3}s`);
 
@@ -919,11 +1023,14 @@ function createStars() {
   }
 }
 
+/* ========================================
+   ГЕНЕРАЦИЯ ПАДАЮЩИХ СНЕЖИНОК
+   ======================================== */
 function createSnowflakes() {
   const container = document.getElementById('snowflakesContainer');
   if (!container) return;
 
-  const snowflakeCount = 60;
+  const snowflakeCount = 60; // Много снежинок
   const snowflakeChars = ['❄', '❅', '❆', '✻', '✼', '❋', '✿', '❀'];
 
   for (let i = 0; i < snowflakeCount; i++) {
@@ -931,16 +1038,24 @@ function createSnowflakes() {
     snowflake.className = 'snowflake';
     snowflake.textContent = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
 
+    // Случайное положение по горизонтали
     snowflake.style.left = `${Math.random() * 100}%`;
 
+    // Случайный размер (8-28px)
     const size = 8 + Math.random() * 20;
     snowflake.style.setProperty('--snowflake-size', `${size}px`);
 
+    // Случайная длительность падения (8-18 секунд)
     const duration = 8 + Math.random() * 10;
     snowflake.style.setProperty('--fall-duration', `${duration}s`);
 
+    // Случайная задержка
     snowflake.style.setProperty('--fall-delay', `${Math.random() * 15}s`);
+
+    // Случайный дрейф влево/вправо (-100 до 100px)
     snowflake.style.setProperty('--drift', `${-100 + Math.random() * 200}px`);
+
+    // Случайная прозрачность
     snowflake.style.opacity = 0.5 + Math.random() * 0.5;
 
     container.appendChild(snowflake);
@@ -950,6 +1065,7 @@ function createSnowflakes() {
 /* ========================================
    ЗАПУСК
    ======================================== */
+// Инициализация после загрузки DOM
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     createStars();
@@ -965,26 +1081,33 @@ if (document.readyState === 'loading') {
 /* ========================================
    ФИНАЛЬНЫЙ ЭКРАН С ПОЖЕЛАНИЯМИ
    ======================================== */
+
+// Показать финальный экран
 function showFinalScreen() {
   const finalScreen = document.getElementById('finalScreen');
   finalScreen.classList.add('active');
 
+  // Запускаем эффекты
   startFlashingWishes();
   startFloatingWishes();
   generateQRCode();
 }
 
+// Закрыть финальный экран
 function closeFinalScreen() {
   const finalScreen = document.getElementById('finalScreen');
   finalScreen.classList.remove('active');
 
+  // Останавливаем эффекты
   stopFlashingWishes();
   stopFloatingWishes();
 
+  // Очищаем фон
   const wishesBackground = document.getElementById('wishesBackground');
   wishesBackground.innerHTML = '';
 }
 
+// Эффект быстро мелькающих пожеланий
 function startFlashingWishes() {
   const background = document.getElementById('wishesBackground');
 
@@ -996,6 +1119,7 @@ function startFlashingWishes() {
 
     background.appendChild(flashElement);
 
+    // Удаляем после анимации
     setTimeout(() => {
       flashElement.remove();
     }, 150);
@@ -1009,13 +1133,16 @@ function stopFlashingWishes() {
   }
 }
 
+// Эффект плавающих пожеланий по бокам
 function startFloatingWishes() {
   const background = document.getElementById('wishesBackground');
 
+  // Создаём начальные плавающие пожелания
   for (let i = 0; i < 15; i++) {
     setTimeout(() => createFloatingWish(background), i * 500);
   }
 
+  // Продолжаем создавать новые
   floatingWishesInterval = setInterval(() => {
     createFloatingWish(background);
   }, 800);
@@ -1027,9 +1154,10 @@ function createFloatingWish(container) {
   element.className = 'floating-wish';
   element.textContent = wish;
 
-  const startY = Math.random() * 80 + 10;
-  const endY = startY + (Math.random() * 20 - 10);
-  const duration = 8 + Math.random() * 6;
+  // Случайные параметры
+  const startY = Math.random() * 80 + 10; // 10-90% от высоты
+  const endY = startY + (Math.random() * 20 - 10); // небольшое отклонение
+  const duration = 8 + Math.random() * 6; // 8-14 секунд
 
   element.style.setProperty('--start-y', `${startY}vh`);
   element.style.setProperty('--end-y', `${endY}vh`);
@@ -1038,6 +1166,7 @@ function createFloatingWish(container) {
 
   container.appendChild(element);
 
+  // Удаляем после завершения анимации
   setTimeout(() => {
     element.remove();
   }, duration * 1000);
@@ -1056,12 +1185,13 @@ function generateQRCode() {
   qrContainer.innerHTML = '';
 
   const img = document.createElement('img');
-  img.src = QR_IMAGE_URL;
+  img.src = QR_IMAGE_URL; // например './qr.png'
   img.alt = 'QR-код для получения пожелания';
   img.style.width = '100%';
   img.style.height = '100%';
   img.style.objectFit = 'contain';
 
+  // На случай, если файл qr.png не найден / не загрузился
   img.onerror = () => {
     qrContainer.innerHTML = `
       <div style="text-align:center; padding:12px;">
@@ -1091,6 +1221,7 @@ window.addEventListener('error', (e) => {
    ======================================== */
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
+    // Сохранение прогресса при сворачивании
     if (viewedRegions.size > 0) {
       saveProgressToIndexedDB().catch(err => console.error('Error saving progress:', err));
     }
