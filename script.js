@@ -100,7 +100,7 @@ async function assetExists(url) {
    ======================================== */
 function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('PresentationDB', 4);
+    const request = indexedDB.open('PresentationDB', 2);
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
@@ -1096,4 +1096,3 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
-
