@@ -59,7 +59,7 @@ const wishesForAnimation = [
  * - id/классы/порядок — не меняем (это влияет на бенто-сетку и CSS)
  */
 const regions = [
-  { id: 'nn',         name: 'ЯНАО',             code: '#89', ornament: 'yanao',      folder: 'ЯНАО' },
+  { id: 'nn',         name: 'ЯНАО',             code: '#89', ornament: 'yanao',      folder: 'Jamal' },
   { id: 'vladivostok',name: 'Владивосток',      code: '#25', ornament: 'vladivostok',folder: 'Vladivostok' },
   { id: 'yanao',      name: 'Новосибирск',      code: '#54', ornament: 'Novosib',    folder: 'Novosib' },
   { id: 'krasnodar',  name: 'Нижний Новгород',  code: '#52', ornament: 'nn',         folder: 'NN' },
