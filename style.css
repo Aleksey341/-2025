@@ -92,7 +92,7 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Фоновое изображение */
+/* Фоновое изображение с WebP поддержкой */
 body::before {
     content: '';
     position: fixed;
@@ -100,7 +100,12 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('christmas-background3.png');
+    background-image:
+        image-set(
+            url('christmas-background3.webp') type('image/webp'),
+            url('christmas-background3.png') type('image/png')
+        );
+    background-image: url('christmas-background3.webp');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -108,6 +113,11 @@ body::before {
     z-index: 0;
     pointer-events: none;
     transition: opacity 0.5s ease 0.3s;
+}
+
+/* Fallback для браузеров без WebP */
+.no-webp body::before {
+    background-image: url('christmas-background3.png');
 }
 
 body.intro-active::before {
@@ -130,7 +140,7 @@ body.intro-active::before {
 }
 
 /* ========================================
-   ВСТУПИТЕЛЬНЫЙ ЭКРАН
+   ВСТУПИТЕЛЬНЫЙ ЭКРАН с WebP
    ======================================== */
 .intro-screen {
     position: fixed;
@@ -139,7 +149,12 @@ body.intro-active::before {
     width: 100vw;
     height: 100vh;
     z-index: 10000;
-    background-image: url('christmas-background1.png');
+    background-image:
+        image-set(
+            url('christmas-background1.webp') type('image/webp'),
+            url('christmas-background1.png') type('image/png')
+        );
+    background-image: url('christmas-background1.webp');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -148,6 +163,10 @@ body.intro-active::before {
     justify-content: center;
     cursor: pointer;
     transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.no-webp .intro-screen {
+    background-image: url('christmas-background1.png');
 }
 
 .intro-screen.hidden {
@@ -177,6 +196,7 @@ body.intro-active::before {
     animation: twinkle var(--twinkle-duration, 2s) ease-in-out infinite;
     animation-delay: var(--twinkle-delay, 0s);
     box-shadow: 0 0 var(--star-glow, 3px) rgba(255, 255, 255, 0.8);
+    will-change: opacity, transform;
 }
 
 /* Размеры звёзд */
@@ -216,7 +236,7 @@ body.intro-active::before {
 }
 
 /* ========================================
-   ПАДАЮЩИЕ СНЕЖИНКИ
+   ПАДАЮЩИЕ СНЕЖИНКИ (оптимизировано)
    ======================================== */
 .snowflakes-container {
     position: fixed;
@@ -227,6 +247,7 @@ body.intro-active::before {
     overflow: hidden;
     pointer-events: none;
     z-index: 50;
+    contain: strict;
 }
 
 .snowflake {
@@ -239,6 +260,7 @@ body.intro-active::before {
     animation-delay: var(--fall-delay, 0s);
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
     filter: drop-shadow(0 0 3px rgba(200, 220, 255, 0.6));
+    will-change: transform;
 }
 
 @keyframes snowfall {
@@ -391,6 +413,7 @@ body.intro-active .snowflakes-container {
     transform-style: preserve-3d;
     transform: translateY(0) translateZ(0);
     contain: layout style paint;
+    will-change: transform;
 }
 
 /* Плавное появление карточек - только при первой загрузке */
@@ -1512,6 +1535,7 @@ body.intro-active .snowflakes-container {
     animation: floatWish var(--float-duration, 8s) linear infinite;
     animation-delay: var(--float-delay, 0s);
     text-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+    will-change: transform;
 }
 
 @keyframes floatWish {
