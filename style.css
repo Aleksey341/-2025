@@ -128,15 +128,16 @@ body.intro-active::before {
    ОСНОВНОЙ КОНТЕЙНЕР
    ======================================== */
 .container {
-    max-width: 90vw;
+    max-width: 95vw;
     margin: 0 auto;
     position: relative;
     z-index: 1;
     padding: 0;
-    padding-top: 80px;
-    padding-left: 2rem;
-    padding-right: 2rem;
+    padding-top: clamp(60px, 8vh, 100px);
+    padding-left: clamp(0.5rem, 2vw, 2rem);
+    padding-right: clamp(0.5rem, 2vw, 2rem);
     height: calc(100vh - var(--spacing-sm) * 2);
+    height: calc(100dvh - var(--spacing-sm) * 2);
 }
 
 /* ========================================
@@ -317,12 +318,12 @@ body.intro-active .snowflakes-container {
    ======================================== */
 .hero-title {
     position: fixed;
-    top: calc(var(--spacing-sm) + 80px);
-    left: calc((100vw - 90vw) / 2 + 2rem);
+    top: clamp(0.5rem, 1vh, 1rem);
+    left: clamp(0.5rem, 2.5vw, 2rem);
     transform: none;
     z-index: 100;
 
-	display: inline-block;
+    display: inline-block;
     text-align: left;
 
     background: transparent;
@@ -335,7 +336,7 @@ body.intro-active .snowflakes-container {
     margin: 0;
     text-align: left;
     line-height: 1;
-    max-width: 30vw;
+    max-width: 35vw;
     animation: fadeInDown 0.8s ease-out;
 }
 
@@ -349,11 +350,11 @@ body.intro-active .snowflakes-container {
 
     color: #ffffff;
 
-    font-size: clamp(5.67rem, 9.45vw, 9.45rem);
+    font-size: clamp(1.8rem, 5vw, 6rem);
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* Нижняя строка: рукописная, белая, чуть "заезжает" на верхнюю */
+/* Нижняя строка: рукописная, оранжевая */
 .hero-title__bottom {
     display: block;
 
@@ -361,10 +362,10 @@ body.intro-active .snowflakes-container {
     font-weight: 400;
 
     color: #ff4f12;
-    font-size: clamp(4.536rem, 8.316vw, 8.316rem);
+    font-size: clamp(1.4rem, 4vw, 5rem);
 
-    margin-top: -0.3em;
-    margin-left: 5ch;
+    margin-top: -0.2em;
+    margin-left: clamp(5ch, 10ch, 14ch);
 
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
     transform: rotate(-2deg);
@@ -389,8 +390,8 @@ body.intro-active .snowflakes-container {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 1rem;
-    height: calc(100% - 160px);
+    gap: clamp(0.5rem, 1vw, 1rem);
+    height: calc(100% - clamp(80px, 12vh, 160px));
     margin-bottom: 0;
 }
 
@@ -1146,16 +1147,87 @@ body.intro-active .snowflakes-container {
     }
 }
 
-/* Планшеты */
+/* Ноутбуки с низкой высотой экрана (1366x768 и подобные) */
+@media (max-height: 800px) {
+    .container {
+        padding-top: clamp(50px, 7vh, 80px);
+    }
+
+    .hero-title__top {
+        font-size: clamp(1.5rem, 4vw, 4rem);
+    }
+
+    .hero-title__bottom {
+        font-size: clamp(1.2rem, 3.5vw, 3.5rem);
+        margin-left: clamp(4ch, 8ch, 12ch);
+    }
+
+    .bento-grid {
+        height: calc(100% - clamp(60px, 10vh, 120px));
+        gap: clamp(0.3rem, 0.8vw, 0.8rem);
+    }
+
+    .bento-item {
+        padding: 0.5rem;
+        border-radius: 12px;
+    }
+
+    .license-plate {
+        padding: 0.2rem 0.4rem;
+    }
+
+    .license-code {
+        font-size: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .progress-container {
+        padding: 0.5rem 1rem;
+    }
+
+    .service-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Очень низкие экраны (высота < 700px) */
+@media (max-height: 700px) {
+    .container {
+        padding-top: clamp(40px, 6vh, 60px);
+    }
+
+    .hero-title__top {
+        font-size: clamp(1.2rem, 3.5vw, 3rem);
+    }
+
+    .hero-title__bottom {
+        font-size: clamp(1rem, 3vw, 2.5rem);
+        margin-left: clamp(3ch, 6ch, 10ch);
+    }
+
+    .bento-grid {
+        height: calc(100% - clamp(50px, 8vh, 80px));
+    }
+}
+
+/* Широкие экраны с низкой высотой */
+@media (min-width: 1200px) and (max-height: 800px) {
+    .bento-grid {
+        grid-template-columns: repeat(5, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+    }
+}
+
+/* Планшеты и небольшие ноутбуки */
 @media (max-width: 1200px) {
     .container {
-        padding-top: 140px;
+        padding-top: clamp(80px, 10vh, 140px);
         padding-left: 1.5rem;
         padding-right: 1.5rem;
     }
 
     .bento-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         grid-template-rows: auto;
         height: calc(100% - 70px);
         overflow-y: auto;
@@ -1164,7 +1236,7 @@ body.intro-active .snowflakes-container {
     .bento-item {
         grid-column: auto !important;
         grid-row: auto !important;
-        min-height: 220px;
+        min-height: 180px;
     }
 
     /* Разделённые карточки на планшетах */
