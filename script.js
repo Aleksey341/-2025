@@ -699,6 +699,48 @@ async function loadSplitModeFromIndexedDB() {
 }
 
 /* ========================================
+   ЗАГРУЗКА СЛАЙДОВ ИЗ РЕПОЗИТОРИЯ
+   ======================================== */
+async function loadAllSlides() {
+  const btn = document.querySelector('.service-btn.primary');
+  const originalText = btn ? btn.textContent : '';
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Загрузка...';
+    }
+
+    // Очищаем кэш перед загрузкой
+    slidesData = {};
+    const transaction = db.transaction(['slides'], 'readwrite');
+    const store = transaction.objectStore('slides');
+    await new Promise((resolve, reject) => {
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+
+    // Загружаем слайды из репозитория
+    await preloadAllSlidesFromRepo();
+
+    // Обновляем карточки
+    createRegionCards();
+
+    console.log('All slides loaded successfully');
+    alert('Слайды успешно загружены!');
+  } catch (error) {
+    console.error('Error loading slides:', error);
+    alert('Ошибка при загрузке слайдов. Проверьте консоль.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+/* ========================================
    СБРОС СЛАЙДОВ/ПРОГРЕССА
    ======================================== */
 async function resetSlides() {

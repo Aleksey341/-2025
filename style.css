@@ -948,6 +948,21 @@ body.intro-active .snowflakes-container {
     outline-offset: 2px;
 }
 
+.service-btn.primary {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    font-weight: 600;
+}
+
+.service-btn.primary:hover {
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.5);
+}
+
+.service-btn.primary:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* ========================================
    ПРОГРЕСС БАР
    ======================================== */
