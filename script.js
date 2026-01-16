@@ -1,105 +1,112 @@
 /* ========================================
-   CONFIG
-   ======================================== */
-
-const PAGES_BASE_URL = 'https://aleksey341.github.io/-2025';
-
-// Папки регионов сейчас в корне репозитория: /Samara/01.png
-// Если позже перенесёте в /slides/<Region>/01.png → поставьте 'slides'
-const SLIDES_ROOT_DIR = ''; // '' | 'slides'
-
-const SLIDE_EXT = 'png';
-const SLIDE_PAD = 2;
-const SLIDE_MAX_TRY = 200;
-
-const WISH_PAGE_URL = 'https://aleksey341.github.io/-2025/wish.html';
-const QR_IMAGE_URL = './qr.png';
-
-/* ========================================
-   GLOBAL STATE
+   ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
    ======================================== */
 let db;
-let slidesData = {};              // { regionId: [ {name, data(url)} ] }
+let slidesData = {};
 let viewedRegions = new Set();
 let currentRegion = null;
 let currentSlideIndex = 0;
-let isSplitMode = false;
-let isFirstLoad = true;
-let finalScreenInterval = null;
-let floatingWishesInterval = null;
+let isSplitMode = false; // Флаг разделения карточки Владивостока
+let isFirstLoad = true; // Флаг первой загрузки для анимации
+let finalScreenInterval = null; // Интервал для мелькающих пожеланий
+let floatingWishesInterval = null; // Интервал для плавающих пожеланий
 
-// Чтобы не запускать параллельные загрузки одного региона
-const downloadInFlight = new Map(); // regionId -> Promise
+// URL для QR-кода на GitHub Pages
+const WISH_PAGE_URL = 'https://aleksey341.github.io/-2025/wish.html';
+const QR_IMAGE_URL = './qr.png';
 
+/**
+ * Базовый URL для ассетов (папки и картинки) относительно текущей страницы.
+ * Если index.html лежит в корне репозитория, то получится:
+ * https://aleksey341.github.io/-2025/
+ */
+const ASSETS_BASE_URL = new URL('.', window.location.href).href;
+
+// Настройки авто-поиска слайдов в папке
+const SLIDE_FILE_EXT = 'png';
+const SLIDE_PAD = 2;               // 01.png, 02.png
+const SLIDE_MAX = 120;             // максимум попыток (на всякий)
+const SLIDE_STOP_AFTER_MISSES = 5; // остановиться после N подряд промахов, если уже нашли хотя бы 1
+
+/* ========================================
+   Пожелания для эффекта мелькания
+   ======================================== */
 const wishesForAnimation = [
-  "Пусть дисциплина будет мягкой, но рабочей",
-  "Пусть мотивация приходит изнутри",
-  "Пусть вы чаще чувствуете уверенность",
-  "Пусть решения даются легко",
-  "Пусть каждый месяц приносит маленькую победу",
-  "Пусть год станет для вас точкой роста",
-  "Пусть ваши навыки монетизируются достойно",
-  "Пусть дедлайны будут управляемыми",
-  "Пусть уважение к вам будет нормой",
-  "Пусть ваши деньги работают без нервов",
-  "Пусть дом будет наполнен светом",
-  "Пусть любовь будет зрелой и тёплой",
-  "Пусть забота будет взаимной",
-  "Пусть вы слышите друг друга",
-  "Пусть в семье будет больше поддержки",
-  "Пусть вас окружают надёжные люди"
+  "Пусть работа приносит смысл",
+  "Пусть усилия замечают и ценят",
+  "Пусть проекты завершаются вовремя",
+  "Пусть рядом будут сильные союзники",
+  "Пусть деньги приходят регулярно",
+  "Пусть доход растёт быстрее расходов",
+  "Пусть дом будет местом силы",
+  "Пусть семья будет спокойным тылом",
+  "Пусть здоровье будет крепким",
+  "Пусть энергии хватает на главное",
+  "Пусть Новый год принесёт удачу",
+  "Пусть год подарит возможности",
+  "Пусть мечты становятся реальностью",
+  "Пусть вы гордитесь собой чаще",
+  "Пусть вам везёт по-крупному",
+  "Пусть удача будет вашим фоном",
+  "Пусть всё важное складывается",
+  "Пусть год будет счастливым"
 ];
 
-/* ========================================
-   REGIONS (ID == folder name in repo)
-   ======================================== */
+/**
+ * ВАЖНО:
+ * - folder: имя папки в репозитории (в корне), где лежат 01.png, 02.png...
+ * - ornament: как и было (для ornament_*.png)
+ * - id/классы/порядок — не меняем (это влияет на бенто-сетку и CSS)
+ */
 const regions = [
-  { id: 'Samara',       name: 'Самара',            code: '#63', ornament: 'samara' },
-  { id: 'SPB',          name: 'Санкт-Петербург',   code: '#78', ornament: 'spb' },
-  { id: 'Vladivostok',  name: 'Владивосток',       code: '#25', ornament: 'vladivostok' },
-  { id: 'Jamal',        name: 'ЯНАО',              code: '#89', ornament: 'yanao' },
-  { id: 'Krasnodar',    name: 'Краснодар',         code: '#23', ornament: 'krasnodar' },
-  { id: 'NN',           name: 'Нижний Новгород',   code: '#52', ornament: 'nn' },
-  { id: 'Novosib',      name: 'Новосибирск',       code: '#54', ornament: 'novosib' },
-  { id: 'Arhangelsk',   name: 'Архангельск',       code: '#29', ornament: 'arhangelsk' }
+  { id: 'nn',         name: 'ЯНАО',             code: '#89', ornament: 'yanao',      folder: 'ЯНАО' },
+  { id: 'vladivostok',name: 'Владивосток',      code: '#25', ornament: 'vladivostok',folder: 'Vladivostok' },
+  { id: 'yanao',      name: 'Новосибирск',      code: '#54', ornament: 'Novosib',    folder: 'Novosib' },
+  { id: 'krasnodar',  name: 'Нижний Новгород',  code: '#52', ornament: 'nn',         folder: 'NN' },
+  { id: 'region1',    name: 'Краснодар',        code: '#23', ornament: 'krasnodar',  folder: 'Krasnodar' },
+  { id: 'region2',    name: 'Санкт-Петербург',  code: '#78', ornament: 'region4',    folder: 'SPB' },
+  { id: 'region3',    name: 'Самара',           code: '#63', ornament: 'samara',     folder: 'Samara' },
+  { id: 'region4',    name: 'Арх',              code: '#29', ornament: 'Арх',        folder: 'Arhangelsk' }
 ];
 
-const kirovRegion = { id: 'Kirovskaja', name: 'Кировская область', code: '#43', ornament: 'kirovskaja' };
+// Скрытый регион Кировская область (появляется после разделения)
+const kirovRegion = { id: 'kirov', name: 'Кировская область', code: '#43', ornament: 'kirov', folder: 'Kirovskaja' };
 
 /* ========================================
-   HELPERS
+   ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ URL/ПРОВЕРКИ
    ======================================== */
-function $(id) { return document.getElementById(id); }
-
-function to2(n) { return String(n).padStart(SLIDE_PAD, '0'); }
-
-function buildSlideUrl(regionId, index1based) {
-  const file = `${to2(index1based)}.${SLIDE_EXT}`;
-  const parts = [PAGES_BASE_URL];
-  if (SLIDES_ROOT_DIR) parts.push(SLIDES_ROOT_DIR);
-  parts.push(regionId, file);
-  return parts.join('/').replace(/([^:]\/)\/+/g, '$1');
+function padNumber(num, size = 2) {
+  return String(num).padStart(size, '0');
 }
 
-function safeText(s) { return String(s ?? ''); }
-
-function getTotalRegionsCount() {
-  return regions.length + (isSplitMode ? 1 : 0);
+function buildUrlFromSegments(...segments) {
+  // Кодируем каждый сегмент отдельно (важно для кириллицы в папках)
+  const encoded = segments.map(s => encodeURIComponent(String(s))).join('/');
+  return ASSETS_BASE_URL + encoded;
 }
 
-function hasSlides(regionId) {
-  return Array.isArray(slidesData[regionId]) && slidesData[regionId].length > 0;
+async function assetExists(url) {
+  // GitHub Pages обычно поддерживает HEAD. Если вдруг нет — упадём в false.
+  try {
+    const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 /* ========================================
-   INDEXEDDB INIT
+   INDEXEDDB ИНИЦИАЛИЗАЦИЯ
    ======================================== */
 function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('PresentationDB', 3);
+    const request = indexedDB.open('PresentationDB', 2);
 
     request.onerror = () => reject(request.error);
-    request.onsuccess = () => { db = request.result; resolve(db); };
+    request.onsuccess = () => {
+      db = request.result;
+      resolve(db);
+    };
 
     request.onupgradeneeded = (event) => {
       db = event.target.result;
@@ -107,6 +114,7 @@ function initDB() {
       if (!db.objectStoreNames.contains('slides')) {
         db.createObjectStore('slides', { keyPath: 'regionId' });
       }
+
       if (!db.objectStoreNames.contains('progress')) {
         db.createObjectStore('progress', { keyPath: 'id' });
       }
@@ -114,178 +122,189 @@ function initDB() {
   });
 }
 
+/* ========================================
+   СОХРАНЕНИЕ В INDEXEDDB
+   ======================================== */
 async function saveToIndexedDB(regionId) {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(['slides'], 'readwrite');
-    const store = tx.objectStore('slides');
-    const request = store.put({ regionId, slides: slidesData[regionId] || [] });
-    request.onsuccess = () => resolve();
+    const transaction = db.transaction(['slides'], 'readwrite');
+    const store = transaction.objectStore('slides');
+    const request = store.put({
+      regionId: regionId,
+      slides: slidesData[regionId]
+    });
+
+    request.onsuccess = () => {
+      console.log('Slides saved for region:', regionId);
+      resolve();
+    };
     request.onerror = () => reject(request.error);
   });
 }
 
+/* ========================================
+   ЗАГРУЗКА ИЗ INDEXEDDB
+   ======================================== */
 async function loadFromIndexedDB() {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(['slides'], 'readonly');
-    const store = tx.objectStore('slides');
+    const transaction = db.transaction(['slides'], 'readonly');
+    const store = transaction.objectStore('slides');
     const request = store.getAll();
 
     request.onsuccess = () => {
-      const results = request.result || [];
+      const results = request.result;
       results.forEach(item => {
         if (item.slides && item.slides.length > 0) {
+          // Конвертация старого формата в новый
           slidesData[item.regionId] = item.slides.map(slide => {
-            if (typeof slide === 'string') return { name: '', data: slide };
+            if (typeof slide === 'string') {
+              return { name: '', data: slide };
+            }
             return slide;
           });
-          slidesData[item.regionId].sort((a, b) =>
-            (a?.name || '').localeCompare((b?.name || ''), undefined, { numeric: true })
-          );
+
+          // Сортировка слайдов по имени файла
+          slidesData[item.regionId].sort((a, b) => {
+            if (!a.name || !b.name) return 0;
+            return a.name.localeCompare(b.name, undefined, { numeric: true });
+          });
         }
       });
+      console.log('Loaded slides:', slidesData);
       resolve();
     };
-
     request.onerror = () => reject(request.error);
   });
 }
 
+/* ========================================
+   СОХРАНЕНИЕ ПРОГРЕССА
+   ======================================== */
 async function saveProgressToIndexedDB() {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(['progress'], 'readwrite');
-    const store = tx.objectStore('progress');
-    const request = store.put({ id: 'viewedRegions', regions: Array.from(viewedRegions) });
-    request.onsuccess = () => resolve();
+    const transaction = db.transaction(['progress'], 'readwrite');
+    const store = transaction.objectStore('progress');
+    const request = store.put({
+      id: 'viewedRegions',
+      regions: Array.from(viewedRegions)
+    });
+
+    request.onsuccess = () => {
+      console.log('Progress saved');
+      resolve();
+    };
     request.onerror = () => reject(request.error);
   });
 }
 
+/* ========================================
+   ЗАГРУЗКА ПРОГРЕССА
+   ======================================== */
 async function loadProgressFromIndexedDB() {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(['progress'], 'readonly');
-    const store = tx.objectStore('progress');
+    const transaction = db.transaction(['progress'], 'readonly');
+    const store = transaction.objectStore('progress');
     const request = store.get('viewedRegions');
 
     request.onsuccess = () => {
-      if (request.result?.regions) viewedRegions = new Set(request.result.regions);
+      if (request.result && request.result.regions) {
+        viewedRegions = new Set(request.result.regions);
+        console.log('Loaded progress:', viewedRegions);
+      }
       resolve();
     };
     request.onerror = () => reject(request.error);
   });
 }
 
-async function saveSplitModeToIndexedDB() {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(['progress'], 'readwrite');
-    const store = tx.objectStore('progress');
-    const request = store.put({ id: 'splitMode', value: !!isSplitMode });
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function loadSplitModeFromIndexedDB() {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(['progress'], 'readonly');
-    const store = tx.objectStore('progress');
-    const request = store.get('splitMode');
-
-    request.onsuccess = () => { isSplitMode = !!request.result?.value; resolve(); };
-    request.onerror = () => reject(request.error);
-  });
-}
-
 /* ========================================
-   DOWNLOAD SLIDES FROM GITHUB PAGES
+   АВТОЗАГРУЗКА СЛАЙДОВ ИЗ РЕПОЗИТОРИЯ (GitHub Pages)
    ======================================== */
-async function urlExists(url) {
-  try {
-    const r = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-    return r.ok;
-  } catch (_) {
-    try {
-      const r2 = await fetch(url, { method: 'GET', cache: 'no-store' });
-      return r2.ok;
-    } catch (__) {
-      return false;
-    }
-  }
-}
+async function loadRegionSlidesFromRepo(region) {
+  const regionId = region.id;
+  const folder = region.folder;
 
-async function downloadRegionSlides(regionId, { onProgress } = {}) {
-  const collected = [];
-  for (let i = 1; i <= SLIDE_MAX_TRY; i++) {
-    const url = buildSlideUrl(regionId, i);
-    const ok = await urlExists(url);
-    if (!ok) break;
+  if (!folder) return false;
 
-    collected.push({ name: `${to2(i)}.${SLIDE_EXT}`, data: url });
-
-    if (typeof onProgress === 'function') {
-      onProgress({ loaded: collected.length, lastUrl: url });
-    }
-  }
-  return collected;
-}
-
-function setCardBackStatus(cardEl, text) {
-  if (!cardEl) return;
-  const status = cardEl.querySelector('.card-status');
-  if (status) status.textContent = text;
-}
-
-async function ensureSlidesLoaded(regionId, cardEl) {
-  if (hasSlides(regionId)) return;
-
-  // если уже загружается — ждём тот же промис
-  if (downloadInFlight.has(regionId)) {
-    setCardBackStatus(cardEl, '⏳ Загрузка…');
-    await downloadInFlight.get(regionId);
-    return;
+  // Если уже есть слайды (из IndexedDB) — не перезагружаем
+  if (slidesData[regionId] && slidesData[regionId].length > 0) {
+    return true;
   }
 
-  const p = (async () => {
-    setCardBackStatus(cardEl, '⏳ Загрузка…');
+  const found = [];
+  let missesInRow = 0;
+  let hasAny = false;
 
-    const slides = await downloadRegionSlides(regionId, {
-      onProgress: ({ loaded }) => setCardBackStatus(cardEl, `⏳ Загрузка… (${loaded})`)
-    });
+  for (let i = 1; i <= SLIDE_MAX; i++) {
+    const fileName = `${padNumber(i, SLIDE_PAD)}.${SLIDE_FILE_EXT}`;
+    const url = buildUrlFromSegments(folder, fileName);
 
-    if (!slides.length) {
-      throw new Error(`Не найдено слайдов в ${regionId}. Ожидаются 01.${SLIDE_EXT}, 02.${SLIDE_EXT}…`);
+    const exists = await assetExists(url);
+
+    if (exists) {
+      hasAny = true;
+      missesInRow = 0;
+      found.push({ name: fileName, data: url });
+    } else {
+      missesInRow++;
+      // Если уже нашли хотя бы один файл и дальше идёт серия 404 — останавливаемся
+      if (hasAny && missesInRow >= SLIDE_STOP_AFTER_MISSES) break;
     }
+  }
 
-    slidesData[regionId] = slides;
+  if (found.length > 0) {
+    found.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    slidesData[regionId] = found;
     await saveToIndexedDB(regionId);
-  })();
-
-  downloadInFlight.set(regionId, p);
-
-  try {
-    await p;
-  } finally {
-    downloadInFlight.delete(regionId);
+    return true;
   }
+
+  // Если ничего не нашли — фиксируем пустым массивом, чтобы не дергать HEAD бесконечно
+  slidesData[regionId] = [];
+  await saveToIndexedDB(regionId);
+  return false;
+}
+
+async function preloadAllSlidesFromRepo() {
+  const all = [...regions, kirovRegion];
+
+  // Последовательно, чтобы не устроить шторм из HEAD-запросов
+  for (const r of all) {
+    try {
+      await loadRegionSlidesFromRepo(r);
+    } catch (e) {
+      console.warn('Repo preload failed for region:', r.id, e);
+    }
+  }
+
+  // Перерисовать карточки, чтобы миниатюры появились автоматически
+  createRegionCards();
 }
 
 /* ========================================
-   UI: REGION CARDS
+   СОЗДАНИЕ КАРТОЧЕК РЕГИОНОВ
    ======================================== */
 function createRegionCards() {
-  const grid = $('bentoGrid');
-  if (!grid) return;
-
+  const grid = document.getElementById('bentoGrid');
   grid.innerHTML = '';
 
-  if (isSplitMode) grid.classList.add('split-mode');
-  else grid.classList.remove('split-mode');
+  // Если в режиме разделения - добавляем класс к сетке
+  if (isSplitMode) {
+    grid.classList.add('split-mode');
+  } else {
+    grid.classList.remove('split-mode');
+  }
 
   let cardIndex = 0;
-
   regions.forEach(region => {
-    if (isSplitMode && region.id === 'Vladivostok') {
-      createSplitCard(grid, region, true, cardIndex); cardIndex++;
-      createSplitCard(grid, kirovRegion, false, cardIndex); cardIndex++;
+    // В режиме разделения пропускаем Владивосток - его заменят две карточки
+    if (isSplitMode && region.id === 'vladivostok') {
+      // Создаём карточку Владивосток (неактивную)
+      createSplitCard(grid, region, true, cardIndex);
+      cardIndex++;
+      // Создаём карточку Кировская область (активную)
+      createSplitCard(grid, kirovRegion, false, cardIndex);
+      cardIndex++;
       return;
     }
 
@@ -293,157 +312,190 @@ function createRegionCards() {
     cardIndex++;
   });
 
-  if (isFirstLoad) setTimeout(() => { isFirstLoad = false; }, 1000);
+  // После первого создания карточек сбрасываем флаг
+  if (isFirstLoad) {
+    setTimeout(() => {
+      isFirstLoad = false;
+    }, 1000);
+  }
 }
 
+/* ========================================
+   ОДНА КАРТОЧКА РЕГИОНА
+   ======================================== */
 function createRegionCard(grid, region, forceInactive = false, cardIndex = 0) {
   const item = document.createElement('div');
   item.className = `bento-item ${region.id}${isFirstLoad ? ' animate-in' : ''}`;
   item.setAttribute('role', 'button');
   item.setAttribute('tabindex', '0');
+  item.setAttribute('aria-label', `${region.name} - ${viewedRegions.has(region.id) ? 'Просмотрено' : 'Нажмите для просмотра'}`);
 
-  if (isFirstLoad) item.style.setProperty('--appear-delay', `${cardIndex * 0.1}s`);
+  // Задержка появления для каскадного эффекта (только при первой загрузке)
+  if (isFirstLoad) {
+    item.style.setProperty('--appear-delay', `${cardIndex * 0.1}s`);
+  }
 
-  if (viewedRegions.has(region.id) || forceInactive) item.classList.add('viewed');
+  // Пометка просмотренных
+  if (viewedRegions.has(region.id) || forceInactive) {
+    item.classList.add('viewed');
+  }
 
-  const regionHasSlides = hasSlides(region.id);
-  const thumbnail = regionHasSlides ? slidesData[region.id][0].data : '';
-  const ornamentFile = `ornament_${safeText(region.ornament || region.id)}.png`;
+  const hasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
+
+  // Миниатюра первого слайда (как было)
+  let thumbnail = '';
+  if (hasSlides) {
+    thumbnail = slidesData[region.id][0].data;
+  }
 
   item.innerHTML = `
     <div class="card-inner">
       <div class="card-front">
         <div class="license-plate">
-          <span class="license-code">${safeText(region.code)}</span>
+          <span class="license-code">${region.code}</span>
         </div>
-        <img src="${ornamentFile}" class="region-ornament" alt="${safeText(region.name)}"
-             onerror="this.style.display='none'">
+        <img src="ornament_${region.ornament || region.id}.png" class="region-ornament" alt="${region.name}" onerror="this.style.display='none'">
       </div>
       <div class="card-back">
-        ${regionHasSlides ? `<img src="${safeText(thumbnail)}" class="region-thumbnail" alt="${safeText(region.name)}">`
-                         : `<div class="card-status">Нажмите, чтобы открыть</div>`}
+        ${hasSlides ? `<img src="${thumbnail}" class="region-thumbnail" alt="${region.name}">` : ``}
       </div>
     </div>
   `;
 
-  // для неактивных — только визуал
-  if (forceInactive) {
-    grid.appendChild(item);
-    return;
-  }
+  // События клика и клавиатуры (если не принудительно неактивна)
+  if (!forceInactive) {
+    const openPresentationHandler = async (e) => {
+      // Не реагировать на просмотренные
+      if (viewedRegions.has(region.id)) return;
 
-  const openHandler = async (e) => {
-    if (viewedRegions.has(region.id)) return;
+      // Переворот карточки
+      if (!item.classList.contains('flipped')) {
+        item.classList.add('flipped');
+        return;
+      }
 
-    // 1-й клик — переворот
-    if (!item.classList.contains('flipped')) {
-      item.classList.add('flipped');
-      return;
-    }
+      // Второй клик — открытие презентации
+      // Если слайдов еще нет — пробуем подтянуть из репозитория и затем открыть
+      const nowHasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
 
-    // 2-й клик — открыть, при необходимости сначала скачать
-    try {
-      await ensureSlidesLoaded(region.id, item);
-      // обновим карточки, чтобы появился thumbnail
-      createRegionCards();
+      if (!nowHasSlides) {
+        const ok = await loadRegionSlidesFromRepo(region);
+        createRegionCards(); // обновить миниатюры, если появились
+        if (!ok) {
+          // Ничего не нашли — просто не открываем
+          return;
+        }
+      }
+
       openPresentation(region.id);
-    } catch (err) {
-      console.error(err);
-      setCardBackStatus(item, '❌ Не удалось загрузить');
-      alert(
-        'Не удалось загрузить слайды.\n\n' +
-        'Проверьте:\n' +
-        '1) Папка региона и регистр букв (например Samara, а не samara)\n' +
-        `2) Наличие файлов 01.${SLIDE_EXT}, 02.${SLIDE_EXT} без пропусков\n` +
-        '3) Что GitHub Pages раздаёт эти файлы по прямой ссылке\n\n' +
-        `Технически: ${err.message || err}`
-      );
-    }
-  };
+      item.classList.remove('flipped');
+    };
 
-  item.addEventListener('click', (e) => { e.preventDefault(); openHandler(e); });
-  item.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHandler(e); }
-  });
+    item.addEventListener('click', openPresentationHandler);
+
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openPresentationHandler(e);
+      }
+    });
+  }
 
   grid.appendChild(item);
 }
 
+/* ========================================
+   РАЗДЕЛЁННАЯ КАРТОЧКА
+   ======================================== */
 function createSplitCard(grid, region, isLeft, cardIndex = 0) {
   const item = document.createElement('div');
 
+  // Для левой карточки (Владивосток) - неактивна, для правой (Кировская) - активна
   const isInactive = isLeft;
   const cssClass = isLeft ? 'vladivostok-split-left' : 'kirov-split-right';
 
   item.className = `bento-item ${region.id} ${cssClass} split-card${isFirstLoad ? ' animate-in' : ''}`;
   item.setAttribute('role', 'button');
   item.setAttribute('tabindex', '0');
+  item.setAttribute('aria-label', `${region.name} - ${isInactive ? 'Неактивна' : 'Нажмите для просмотра'}`);
 
-  if (isFirstLoad) item.style.setProperty('--appear-delay', `${cardIndex * 0.1}s`);
-  if (isInactive || viewedRegions.has(region.id)) item.classList.add('viewed');
+  // Задержка появления для каскадного эффекта (только при первой загрузке)
+  if (isFirstLoad) {
+    item.style.setProperty('--appear-delay', `${cardIndex * 0.1}s`);
+  }
 
-  const regionHasSlides = hasSlides(region.id);
-  const thumbnail = regionHasSlides ? slidesData[region.id][0].data : '';
-  const ornamentFile = `ornament_${safeText(region.ornament || region.id)}.png`;
+  // Владивосток всегда неактивен после разделения
+  if (isInactive || viewedRegions.has(region.id)) {
+    item.classList.add('viewed');
+  }
+
+  const hasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
+
+  // Миниатюра первого слайда (как было)
+  let thumbnail = '';
+  if (hasSlides) {
+    thumbnail = slidesData[region.id][0].data;
+  }
 
   item.innerHTML = `
     <div class="card-inner">
       <div class="card-front">
         <div class="license-plate">
-          <span class="license-code">${safeText(region.code)}</span>
+          <span class="license-code">${region.code}</span>
         </div>
-        <img src="${ornamentFile}" class="region-ornament" alt="${safeText(region.name)}"
-             onerror="this.style.display='none'">
+        <img src="ornament_${region.ornament || region.id}.png" class="region-ornament" alt="${region.name}" onerror="this.style.display='none'">
       </div>
       <div class="card-back">
-        ${regionHasSlides ? `<img src="${safeText(thumbnail)}" class="region-thumbnail" alt="${safeText(region.name)}">`
-                         : `<div class="card-status">Нажмите, чтобы открыть</div>`}
+        ${hasSlides ? `<img src="${thumbnail}" class="region-thumbnail" alt="${region.name}">` : ``}
       </div>
     </div>
   `;
 
-  if (isInactive) {
-    grid.appendChild(item);
-    return;
-  }
+  // События только для активной карточки (Кировская)
+  if (!isInactive) {
+    const openPresentationHandler = async (e) => {
+      if (viewedRegions.has(region.id)) return;
 
-  const openHandler = async (e) => {
-    if (viewedRegions.has(region.id)) return;
+      if (!item.classList.contains('flipped')) {
+        item.classList.add('flipped');
+        return;
+      }
 
-    if (!item.classList.contains('flipped')) {
-      item.classList.add('flipped');
-      return;
-    }
+      const nowHasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
 
-    try {
-      await ensureSlidesLoaded(region.id, item);
-      createRegionCards();
+      if (!nowHasSlides) {
+        const ok = await loadRegionSlidesFromRepo(region);
+        createRegionCards();
+        if (!ok) return;
+      }
+
       openPresentation(region.id);
-    } catch (err) {
-      console.error(err);
-      setCardBackStatus(item, '❌ Не удалось загрузить');
-      alert(`Не удалось загрузить слайды для ${region.id}.\n${err.message || err}`);
-    }
-  };
+      item.classList.remove('flipped');
+    };
 
-  item.addEventListener('click', (e) => { e.preventDefault(); openHandler(e); });
-  item.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHandler(e); }
-  });
+    item.addEventListener('click', openPresentationHandler);
+
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openPresentationHandler(e);
+      }
+    });
+  }
 
   grid.appendChild(item);
 }
 
 /* ========================================
-   PRESENTATION VIEW
+   ОТКРЫТИЕ ПРЕЗЕНТАЦИИ
    ======================================== */
 function openPresentation(regionId) {
-  if (!hasSlides(regionId)) return;
+  if (!slidesData[regionId] || slidesData[regionId].length === 0) return;
 
   currentRegion = regionId;
   currentSlideIndex = 0;
 
-  const container = $('slidesContainer');
+  const container = document.getElementById('slidesContainer');
   container.innerHTML = '';
 
   slidesData[regionId].forEach((slide, index) => {
@@ -458,42 +510,52 @@ function openPresentation(regionId) {
   updateSlideCounter();
   updateNavigationButtons();
 
-  const presentation = $('presentation');
+  const presentation = document.getElementById('presentation');
   presentation.classList.add('active');
   presentation.focus();
 
   viewedRegions.add(regionId);
   updateProgress();
-  saveProgressToIndexedDB().catch(console.error);
+  saveProgressToIndexedDB();
 }
 
+/* ========================================
+   ЗАКРЫТИЕ ПРЕЗЕНТАЦИИ
+   ======================================== */
 function closePresentation() {
-  const wasKirovPresentation = currentRegion === kirovRegion.id;
+  const wasKirovPresentation = currentRegion === 'kirov';
 
-  $('presentation').classList.remove('active');
+  document.getElementById('presentation').classList.remove('active');
   currentRegion = null;
 
+  // Восстановить видимость основного интерфейса
   const container = document.querySelector('.container');
   const progressContainer = document.querySelector('.progress-container');
-  if (container) container.style.display = 'block';
-  if (progressContainer) progressContainer.style.display = 'block';
+  container.style.display = 'block';
+  progressContainer.style.display = 'block';
 
-  saveProgressToIndexedDB().catch(console.error);
+  saveProgressToIndexedDB();
   createRegionCards();
 
+  // Если это была презентация карточки руководителя (#43) - показываем финальный экран
   if (wasKirovPresentation) {
-    setTimeout(() => showFinalScreen(), 500);
+    setTimeout(() => {
+      showFinalScreen();
+    }, 500);
   }
 }
 
+/* ========================================
+   ОБНОВЛЕНИЕ КНОПОК НАВИГАЦИИ
+   ======================================== */
 function updateNavigationButtons() {
   if (!currentRegion) return;
 
   const slides = document.querySelectorAll('.slide');
   const prevBtn = document.querySelector('.nav-button.prev');
   const nextBtn = document.querySelector('.nav-button.next');
-  if (!prevBtn || !nextBtn) return;
 
+  // Деактивация кнопки назад на первом слайде
   if (currentSlideIndex === 0) {
     prevBtn.classList.add('disabled');
     prevBtn.setAttribute('aria-disabled', 'true');
@@ -502,6 +564,7 @@ function updateNavigationButtons() {
     prevBtn.setAttribute('aria-disabled', 'false');
   }
 
+  // Деактивация кнопки вперёд на последнем слайде
   if (currentSlideIndex === slides.length - 1) {
     nextBtn.classList.add('disabled');
     nextBtn.setAttribute('aria-disabled', 'true');
@@ -511,8 +574,12 @@ function updateNavigationButtons() {
   }
 }
 
+/* ========================================
+   СЛЕДУЮЩИЙ/ПРЕДЫДУЩИЙ СЛАЙД
+   ======================================== */
 function nextSlide() {
   if (!currentRegion) return;
+
   const slides = document.querySelectorAll('.slide');
   if (currentSlideIndex >= slides.length - 1) return;
 
@@ -526,6 +593,7 @@ function nextSlide() {
 
 function prevSlide() {
   if (!currentRegion) return;
+
   const slides = document.querySelectorAll('.slide');
   if (currentSlideIndex <= 0) return;
 
@@ -537,134 +605,249 @@ function prevSlide() {
   updateNavigationButtons();
 }
 
+/* ========================================
+   ОБНОВЛЕНИЕ СЧЁТЧИКА СЛАЙДОВ
+   ======================================== */
 function updateSlideCounter() {
   if (!currentRegion) return;
   const total = slidesData[currentRegion].length;
-  const counter = $('slideCounter');
-  if (!counter) return;
+  const counter = document.getElementById('slideCounter');
   counter.textContent = `${currentSlideIndex + 1} / ${total}`;
+  counter.setAttribute('aria-label', `Слайд ${currentSlideIndex + 1} из ${total}`);
 }
 
 /* ========================================
-   PROGRESS / SPLIT MODE
+   ОБНОВЛЕНИЕ ПРОГРЕССА
    ======================================== */
 function updateProgress() {
-  const total = getTotalRegionsCount();
+  const total = regions.length;
   const viewed = viewedRegions.size;
-  const percentage = Math.min(100, (viewed / total) * 100);
+  const percentage = (viewed / total) * 100;
 
-  const progressFill = $('progressFill');
-  const progressText = $('progressText');
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
   const progressBar = document.querySelector('.progress-bar');
 
-  if (progressFill) progressFill.style.width = `${percentage}%`;
-  if (progressText) progressText.textContent = `Просмотрено: ${viewed} из ${total} регионов`;
-  if (progressBar) progressBar.setAttribute('aria-valuenow', String(percentage));
+  progressFill.style.width = `${percentage}%`;
+  progressText.textContent = `Просмотрено: ${viewed} из ${total} регионов`;
 
-  if (viewedRegions.size >= regions.length && !isSplitMode) {
-    setTimeout(() => splitVladivostokCard(), 500);
+  progressBar.setAttribute('aria-valuenow', percentage);
+
+  // Когда все регионы просмотрены - разделить карточку Владивостока
+  if (viewed === total && !isSplitMode) {
+    setTimeout(() => {
+      splitVladivostokCard();
+    }, 500);
   }
 }
 
+/* ========================================
+   РАЗДЕЛЕНИЕ КАРТОЧКИ ВЛАДИВОСТОКА
+   ======================================== */
 function splitVladivostokCard() {
   if (isSplitMode) return;
   isSplitMode = true;
 
-  const vladCard = document.querySelector('.bento-item.Vladivostok');
-  if (vladCard) vladCard.classList.add('splitting');
+  const vladivostokCard = document.querySelector('.bento-item.vladivostok');
+  if (!vladivostokCard) return;
 
+  // Добавляем класс для анимации разделения
+  vladivostokCard.classList.add('splitting');
+
+  // После анимации пересоздаём карточки
   setTimeout(() => {
     createRegionCards();
-    saveSplitModeToIndexedDB().catch(console.error);
-    updateProgress();
+    saveSplitModeToIndexedDB();
   }, 800);
 }
 
 /* ========================================
-   RESET
+   СОХРАНЕНИЕ/ЗАГРУЗКА РЕЖИМА РАЗДЕЛЕНИЯ
+   ======================================== */
+async function saveSplitModeToIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['progress'], 'readwrite');
+    const store = transaction.objectStore('progress');
+    const request = store.put({
+      id: 'splitMode',
+      value: isSplitMode
+    });
+
+    request.onsuccess = () => {
+      console.log('Split mode saved');
+      resolve();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadSplitModeFromIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['progress'], 'readonly');
+    const store = transaction.objectStore('progress');
+    const request = store.get('splitMode');
+
+    request.onsuccess = () => {
+      if (request.result && request.result.value) {
+        isSplitMode = request.result.value;
+        console.log('Loaded split mode:', isSplitMode);
+      }
+      resolve();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/* ========================================
+   СБРОС СЛАЙДОВ/ПРОГРЕССА
    ======================================== */
 async function resetSlides() {
-  if (!confirm('Вы уверены, что хотите удалить все загруженные слайды?')) return;
+  if (!confirm('Вы уверены, что хотите удалить все загруженные/кэшированные слайды?')) return;
 
   slidesData = {};
 
-  const tx = db.transaction(['slides'], 'readwrite');
-  const store = tx.objectStore('slides');
+  const transaction = db.transaction(['slides'], 'readwrite');
+  const store = transaction.objectStore('slides');
   const request = store.clear();
 
-  request.onsuccess = () => createRegionCards();
+  request.onsuccess = async () => {
+    console.log('All slides cleared');
+    createRegionCards();
+    // После очистки снова подтянем из репо
+    await preloadAllSlidesFromRepo();
+  };
 }
 
 async function resetProgress() {
   if (!confirm('Вы уверены, что хотите сбросить прогресс просмотра?')) return;
 
   viewedRegions.clear();
-  isSplitMode = false;
+  isSplitMode = false; // Сбрасываем режим разделения
 
-  const tx = db.transaction(['progress'], 'readwrite');
-  const store = tx.objectStore('progress');
+  const transaction = db.transaction(['progress'], 'readwrite');
+  const store = transaction.objectStore('progress');
   const request = store.clear();
 
   request.onsuccess = () => {
+    console.log('Progress cleared');
+
     updateProgress();
     createRegionCards();
+
+    // Показать вступительный экран
     showIntroScreen();
   };
 }
 
 /* ========================================
-   INTRO SCREEN
+   ПОКАЗ ВСТУПИТЕЛЬНОГО ЭКРАНА
    ======================================== */
 function showIntroScreen() {
-  const introScreen = $('introScreen');
-  const logo = $('logo');
-  const heroTitle = $('heroTitle');
-  const progressContainer = $('progressContainer');
-  const mainContainer = $('mainContainer');
+  const introScreen = document.getElementById('introScreen');
+  const logo = document.getElementById('logo');
+  const heroTitle = document.getElementById('heroTitle');
+  const progressContainer = document.getElementById('progressContainer');
+  const mainContainer = document.getElementById('mainContainer');
   const container = document.querySelector('.container');
-
-  if (!introScreen) return;
 
   introScreen.classList.remove('hidden');
   document.body.classList.add('intro-active');
 
-  if (container) container.style.display = 'none';
-  if (progressContainer) progressContainer.style.display = 'none';
+  container.style.display = 'none';
+  progressContainer.style.display = 'none';
 
-  if (logo) logo.classList.add('hidden-on-intro');
-  if (heroTitle) heroTitle.classList.add('hidden-on-intro');
-  if (progressContainer) progressContainer.classList.add('hidden-on-intro');
-  if (mainContainer) mainContainer.classList.add('hidden-on-intro');
+  logo.classList.add('hidden-on-intro');
+  heroTitle.classList.add('hidden-on-intro');
+  progressContainer.classList.add('hidden-on-intro');
+  mainContainer.classList.add('hidden-on-intro');
 
   document.addEventListener('keydown', handleIntroKeyPress);
 }
 
-function hideIntroScreen() {
-  const introScreen = $('introScreen');
-  const logo = $('logo');
-  const heroTitle = $('heroTitle');
-  const progressContainer = $('progressContainer');
-  const mainContainer = $('mainContainer');
-  const container = document.querySelector('.container');
+/* ========================================
+   КЛАВИАТУРНАЯ НАВИГАЦИЯ
+   ======================================== */
+document.addEventListener('keydown', (e) => {
+  const presentationActive = document.getElementById('presentation').classList.contains('active');
 
-  if (!introScreen) return;
+  if (presentationActive) {
+    switch(e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        e.preventDefault();
+        nextSlide();
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault();
+        prevSlide();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        closePresentation();
+        break;
+    }
+  }
+});
+
+/* ========================================
+   TOUCH-СОБЫТИЯ
+   ======================================== */
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', (e) => {
+  const presentationActive = document.getElementById('presentation').classList.contains('active');
+  if (presentationActive) {
+    touchStartX = e.changedTouches[0].screenX;
+  }
+});
+
+document.addEventListener('touchend', (e) => {
+  const presentationActive = document.getElementById('presentation').classList.contains('active');
+  if (presentationActive) {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }
+});
+
+function handleSwipe() {
+  const swipeThreshold = 50;
+  const diff = touchStartX - touchEndX;
+
+  if (Math.abs(diff) < swipeThreshold) return;
+
+  if (diff > 0) nextSlide();
+  else prevSlide();
+}
+
+/* ========================================
+   ВСТУПИТЕЛЬНЫЙ ЭКРАН (скрыть)
+   ======================================== */
+function hideIntroScreen() {
+  const introScreen = document.getElementById('introScreen');
+  const logo = document.getElementById('logo');
+  const heroTitle = document.getElementById('heroTitle');
+  const progressContainer = document.getElementById('progressContainer');
+  const mainContainer = document.getElementById('mainContainer');
+  const container = document.querySelector('.container');
 
   introScreen.classList.add('hidden');
   document.body.classList.remove('intro-active');
 
-  if (container) container.style.display = 'block';
-  if (progressContainer) progressContainer.style.display = 'block';
+  container.style.display = 'block';
+  progressContainer.style.display = 'block';
 
-  if (logo) logo.classList.remove('hidden-on-intro');
-  if (heroTitle) heroTitle.classList.remove('hidden-on-intro');
-  if (progressContainer) progressContainer.classList.remove('hidden-on-intro');
-  if (mainContainer) mainContainer.classList.remove('hidden-on-intro');
+  logo.classList.remove('hidden-on-intro');
+  heroTitle.classList.remove('hidden-on-intro');
+  progressContainer.classList.remove('hidden-on-intro');
+  mainContainer.classList.remove('hidden-on-intro');
 
   document.removeEventListener('keydown', handleIntroKeyPress);
 }
 
 function handleIntroKeyPress(event) {
-  const introScreen = $('introScreen');
+  const introScreen = document.getElementById('introScreen');
   if (introScreen && !introScreen.classList.contains('hidden')) {
     if (event.key === 'Escape' || event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
@@ -674,49 +857,49 @@ function handleIntroKeyPress(event) {
 }
 
 /* ========================================
-   KEYBOARD + TOUCH NAVIGATION
+   ИНИЦИАЛИЗАЦИЯ
    ======================================== */
-document.addEventListener('keydown', (e) => {
-  const presentationActive = $('presentation')?.classList.contains('active');
-  if (!presentationActive) return;
+async function init() {
+  try {
+    await initDB();
+    await loadFromIndexedDB();
+    await loadProgressFromIndexedDB();
+    await loadSplitModeFromIndexedDB();
 
-  switch (e.key) {
-    case 'ArrowRight':
-    case 'ArrowDown':
-      e.preventDefault(); nextSlide(); break;
-    case 'ArrowLeft':
-    case 'ArrowUp':
-      e.preventDefault(); prevSlide(); break;
-    case 'Escape':
-      e.preventDefault(); closePresentation(); break;
+    // Сначала рисуем сетку (как было)
+    createRegionCards();
+    updateProgress();
+
+    // Затем автоматически подтягиваем слайды из репозитория (без кнопок)
+    await preloadAllSlidesFromRepo();
+
+    // Скрыть основные элементы при загрузке (как было)
+    const logo = document.getElementById('logo');
+    const heroTitle = document.getElementById('heroTitle');
+    const progressContainer = document.getElementById('progressContainer');
+    const mainContainer = document.getElementById('mainContainer');
+
+    document.body.classList.add('intro-active');
+
+    logo.classList.add('hidden-on-intro');
+    heroTitle.classList.add('hidden-on-intro');
+    progressContainer.classList.add('hidden-on-intro');
+    mainContainer.classList.add('hidden-on-intro');
+
+    document.addEventListener('keydown', handleIntroKeyPress);
+
+    console.log('App initialized successfully');
+  } catch (error) {
+    console.error('Initialization error:', error);
+    alert('Ошибка инициализации приложения. Проверьте консоль для деталей.');
   }
-});
-
-let touchStartX = 0;
-
-document.addEventListener('touchstart', (e) => {
-  const presentationActive = $('presentation')?.classList.contains('active');
-  if (presentationActive) touchStartX = e.changedTouches[0].screenX;
-});
-
-document.addEventListener('touchend', (e) => {
-  const presentationActive = $('presentation')?.classList.contains('active');
-  if (!presentationActive) return;
-
-  const touchEndX = e.changedTouches[0].screenX;
-  const diff = touchStartX - touchEndX;
-  const swipeThreshold = 50;
-  if (Math.abs(diff) < swipeThreshold) return;
-
-  if (diff > 0) nextSlide();
-  else prevSlide();
-});
+}
 
 /* ========================================
-   VISUAL EFFECTS
+   ЗВЁЗДЫ/СНЕЖИНКИ (как было)
    ======================================== */
 function createStars() {
-  const container = $('starsContainer');
+  const container = document.getElementById('starsContainer');
   if (!container) return;
 
   const starCount = 150;
@@ -725,16 +908,19 @@ function createStars() {
   for (let i = 0; i < starCount; i++) {
     const star = document.createElement('div');
     star.className = `star ${sizes[Math.floor(Math.random() * sizes.length)]}`;
+
     star.style.left = `${Math.random() * 100}%`;
     star.style.top = `${Math.random() * 100}%`;
+
     star.style.setProperty('--twinkle-duration', `${1.5 + Math.random() * 3}s`);
     star.style.setProperty('--twinkle-delay', `${Math.random() * 3}s`);
+
     container.appendChild(star);
   }
 }
 
 function createSnowflakes() {
-  const container = $('snowflakesContainer');
+  const container = document.getElementById('snowflakesContainer');
   if (!container) return;
 
   const snowflakeCount = 60;
@@ -744,24 +930,43 @@ function createSnowflakes() {
     const snowflake = document.createElement('div');
     snowflake.className = 'snowflake';
     snowflake.textContent = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
+
     snowflake.style.left = `${Math.random() * 100}%`;
+
     const size = 8 + Math.random() * 20;
     snowflake.style.setProperty('--snowflake-size', `${size}px`);
+
     const duration = 8 + Math.random() * 10;
     snowflake.style.setProperty('--fall-duration', `${duration}s`);
+
     snowflake.style.setProperty('--fall-delay', `${Math.random() * 15}s`);
     snowflake.style.setProperty('--drift', `${-100 + Math.random() * 200}px`);
     snowflake.style.opacity = 0.5 + Math.random() * 0.5;
+
     container.appendChild(snowflake);
   }
 }
 
 /* ========================================
-   FINAL SCREEN + QR
+   ЗАПУСК
+   ======================================== */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    createStars();
+    createSnowflakes();
+    init();
+  });
+} else {
+  createStars();
+  createSnowflakes();
+  init();
+}
+
+/* ========================================
+   ФИНАЛЬНЫЙ ЭКРАН С ПОЖЕЛАНИЯМИ
    ======================================== */
 function showFinalScreen() {
-  const finalScreen = $('finalScreen');
-  if (!finalScreen) return;
+  const finalScreen = document.getElementById('finalScreen');
   finalScreen.classList.add('active');
 
   startFlashingWishes();
@@ -770,41 +975,50 @@ function showFinalScreen() {
 }
 
 function closeFinalScreen() {
-  const finalScreen = $('finalScreen');
-  if (!finalScreen) return;
+  const finalScreen = document.getElementById('finalScreen');
   finalScreen.classList.remove('active');
 
   stopFlashingWishes();
   stopFloatingWishes();
 
-  const wishesBackground = $('wishesBackground');
-  if (wishesBackground) wishesBackground.innerHTML = '';
+  const wishesBackground = document.getElementById('wishesBackground');
+  wishesBackground.innerHTML = '';
 }
 
 function startFlashingWishes() {
-  const background = $('wishesBackground');
-  if (!background) return;
+  const background = document.getElementById('wishesBackground');
 
   finalScreenInterval = setInterval(() => {
     const wish = wishesForAnimation[Math.floor(Math.random() * wishesForAnimation.length)];
     const flashElement = document.createElement('div');
     flashElement.className = 'flash-wish';
     flashElement.textContent = wish;
+
     background.appendChild(flashElement);
-    setTimeout(() => flashElement.remove(), 150);
+
+    setTimeout(() => {
+      flashElement.remove();
+    }, 150);
   }, 200);
 }
 
 function stopFlashingWishes() {
-  if (finalScreenInterval) { clearInterval(finalScreenInterval); finalScreenInterval = null; }
+  if (finalScreenInterval) {
+    clearInterval(finalScreenInterval);
+    finalScreenInterval = null;
+  }
 }
 
 function startFloatingWishes() {
-  const background = $('wishesBackground');
-  if (!background) return;
+  const background = document.getElementById('wishesBackground');
 
-  for (let i = 0; i < 15; i++) setTimeout(() => createFloatingWish(background), i * 500);
-  floatingWishesInterval = setInterval(() => createFloatingWish(background), 800);
+  for (let i = 0; i < 15; i++) {
+    setTimeout(() => createFloatingWish(background), i * 500);
+  }
+
+  floatingWishesInterval = setInterval(() => {
+    createFloatingWish(background);
+  }, 800);
 }
 
 function createFloatingWish(container) {
@@ -823,16 +1037,22 @@ function createFloatingWish(container) {
   element.style.setProperty('--float-delay', '0s');
 
   container.appendChild(element);
-  setTimeout(() => element.remove(), duration * 1000);
+
+  setTimeout(() => {
+    element.remove();
+  }, duration * 1000);
 }
 
 function stopFloatingWishes() {
-  if (floatingWishesInterval) { clearInterval(floatingWishesInterval); floatingWishesInterval = null; }
+  if (floatingWishesInterval) {
+    clearInterval(floatingWishesInterval);
+    floatingWishesInterval = null;
+  }
 }
 
+// Генерация QR-кода (статический файл из репозитория)
 function generateQRCode() {
-  const qrContainer = $('qrCode');
-  if (!qrContainer) return;
+  const qrContainer = document.getElementById('qrCode');
   qrContainer.innerHTML = '';
 
   const img = document.createElement('img');
@@ -858,7 +1078,7 @@ function generateQRCode() {
 }
 
 /* ========================================
-   IMAGE ERROR LOG
+   ОБРАБОТКА ОШИБОК ЗАГРУЗКИ ИЗОБРАЖЕНИЙ
    ======================================== */
 window.addEventListener('error', (e) => {
   if (e.target && e.target.tagName === 'IMG') {
@@ -867,63 +1087,12 @@ window.addEventListener('error', (e) => {
 }, true);
 
 /* ========================================
-   VISIBILITY SAVE
+   УПРАВЛЕНИЕ ВИДИМОСТЬЮ СТРАНИЦЫ
    ======================================== */
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    if (viewedRegions.size > 0) saveProgressToIndexedDB().catch(console.error);
+    if (viewedRegions.size > 0) {
+      saveProgressToIndexedDB().catch(err => console.error('Error saving progress:', err));
+    }
   }
 });
-
-/* ========================================
-   INIT
-   ======================================== */
-async function init() {
-  try {
-    await initDB();
-    await loadFromIndexedDB();
-    await loadProgressFromIndexedDB();
-    await loadSplitModeFromIndexedDB();
-
-    createRegionCards();
-    updateProgress();
-
-    document.body.classList.add('intro-active');
-
-    const logo = $('logo');
-    const heroTitle = $('heroTitle');
-    const progressContainer = $('progressContainer');
-    const mainContainer = $('mainContainer');
-
-    if (logo) logo.classList.add('hidden-on-intro');
-    if (heroTitle) heroTitle.classList.add('hidden-on-intro');
-    if (progressContainer) progressContainer.classList.add('hidden-on-intro');
-    if (mainContainer) mainContainer.classList.add('hidden-on-intro');
-
-    document.addEventListener('keydown', handleIntroKeyPress);
-
-    console.log('App initialized successfully');
-  } catch (error) {
-    console.error('Initialization error:', error);
-    alert('Ошибка инициализации приложения. Проверьте консоль для деталей.');
-  }
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    createStars();
-    createSnowflakes();
-    init();
-  });
-} else {
-  createStars();
-  createSnowflakes();
-  init();
-}
-
-// Экспорт (если HTML вызывает эти функции)
-window.closePresentation = closePresentation;
-window.resetSlides = resetSlides;
-window.resetProgress = resetProgress;
-window.hideIntroScreen = hideIntroScreen;
-window.closeFinalScreen = closeFinalScreen;
