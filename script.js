@@ -375,8 +375,14 @@ function createRegionCard(grid, region, forceInactive = false, cardIndex = 0) {
   // События клика и клавиатуры (если не принудительно неактивна)
   if (!forceInactive) {
     const openPresentationHandler = async (e) => {
-      // Не реагировать на просмотренные
-      if (viewedRegions.has(region.id)) return;
+      // Для просмотренных карточек - сразу открываем презентацию (без переворота)
+      if (viewedRegions.has(region.id)) {
+        const nowHasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
+        if (nowHasSlides) {
+          openPresentation(region.id);
+        }
+        return;
+      }
 
       // Переворот карточки
       if (!item.classList.contains('flipped')) {
@@ -464,7 +470,14 @@ function createSplitCard(grid, region, isLeft, cardIndex = 0) {
   // События только для активной карточки (Кировская)
   if (!isInactive) {
     const openPresentationHandler = async (e) => {
-      if (viewedRegions.has(region.id)) return;
+      // Для просмотренных карточек - сразу открываем презентацию (без переворота)
+      if (viewedRegions.has(region.id)) {
+        const nowHasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
+        if (nowHasSlides) {
+          openPresentation(region.id);
+        }
+        return;
+      }
 
       if (!item.classList.contains('flipped')) {
         item.classList.add('flipped');
@@ -538,12 +551,13 @@ function closePresentation() {
 
   // Восстановить видимость основного интерфейса
   const container = document.querySelector('.container');
-  const controlButtons = document.getElementById('controlButtons');
   container.style.display = 'block';
-  if (controlButtons) controlButtons.style.display = 'flex';
 
   saveProgressToIndexedDB();
   createRegionCards();
+
+  // Обновляем видимость кнопок управления
+  updateControlButtonsVisibility();
 }
 
 /* ========================================
@@ -630,6 +644,32 @@ function updateProgress() {
       splitVladivostokCard();
     }, 500);
   }
+
+  // Обновляем видимость кнопок управления
+  updateControlButtonsVisibility();
+}
+
+/* ========================================
+   УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПОК
+   ======================================== */
+function updateControlButtonsVisibility() {
+  const controlButtons = document.getElementById('controlButtons');
+  if (!controlButtons) return;
+
+  // Определяем общее количество регионов для просмотра
+  // Если split mode активен - нужно просмотреть все 8 + Кировскую (9 всего)
+  // Если split mode не активен - нужно просмотреть все 8
+  const totalRequired = isSplitMode ? regions.length + 1 : regions.length;
+  const allViewed = viewedRegions.size >= totalRequired;
+
+  // Также проверяем, что Кировская область просмотрена (если split mode активен)
+  const kirovViewed = !isSplitMode || viewedRegions.has('kirov');
+
+  if (allViewed && kirovViewed) {
+    controlButtons.classList.remove('hidden');
+  } else {
+    controlButtons.classList.add('hidden');
+  }
 }
 
 /* ========================================
@@ -705,6 +745,8 @@ async function resetProgress() {
   request.onsuccess = () => {
     console.log('Progress cleared');
     createRegionCards();
+    // Скрываем кнопки после сброса прогресса
+    updateControlButtonsVisibility();
   };
 }
 
@@ -805,7 +847,6 @@ async function hideIntroScreen() {
   document.body.classList.remove('intro-active');
 
   container.style.display = 'block';
-  if (controlButtons) controlButtons.style.display = 'flex';
 
   if (logo) logo.classList.remove('hidden-on-intro');
   if (heroTitle) heroTitle.classList.remove('hidden-on-intro');
@@ -817,6 +858,9 @@ async function hideIntroScreen() {
   // Автоматическая загрузка слайдов при клике на начальный экран
   await preloadAllSlidesFromRepo();
   createRegionCards();
+
+  // Обновляем видимость кнопок управления
+  updateControlButtonsVisibility();
 }
 
 function handleIntroKeyPress(event) {
@@ -854,6 +898,12 @@ async function init() {
     if (heroTitle) heroTitle.classList.add('hidden-on-intro');
     if (controlButtons) controlButtons.classList.add('hidden-on-intro');
     if (mainContainer) mainContainer.classList.add('hidden-on-intro');
+
+    // Изначально скрываем кнопки управления (до просмотра всех презентаций)
+    if (controlButtons) controlButtons.classList.add('hidden');
+
+    // Обновляем видимость кнопок на основе текущего прогресса
+    updateControlButtonsVisibility();
 
     document.addEventListener('keydown', handleIntroKeyPress);
 
