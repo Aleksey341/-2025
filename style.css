@@ -628,6 +628,16 @@ body.intro-active .snowflakes-container {
     }
 }
 
+/* Владивосток после разделения - кликабелен для повторного просмотра */
+.bento-grid.split-mode .bento-item.vladivostok-split-left.viewed {
+    cursor: pointer;
+}
+
+.bento-grid.split-mode .bento-item.vladivostok-split-left.viewed:hover {
+    opacity: 0.8;
+    transform: translateY(-4px) scale(1.01);
+}
+
 @keyframes splitAppearRight {
     0% {
         opacity: 0;

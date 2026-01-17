@@ -467,7 +467,25 @@ function createSplitCard(grid, region, isLeft, cardIndex = 0) {
     </div>
   `;
 
-  // События только для активной карточки (Кировская)
+  // Для неактивной карточки (Владивосток после разделения) - только повторное открытие
+  if (isInactive && viewedRegions.has(region.id)) {
+    const reopenHandler = (e) => {
+      const nowHasSlides = slidesData[region.id] && slidesData[region.id].length > 0;
+      if (nowHasSlides) {
+        openPresentation(region.id);
+      }
+    };
+
+    item.addEventListener('click', reopenHandler);
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        reopenHandler(e);
+      }
+    });
+  }
+
+  // События для активной карточки (Кировская)
   if (!isInactive) {
     const openPresentationHandler = async (e) => {
       // Для просмотренных карточек - сразу открываем презентацию (без переворота)
