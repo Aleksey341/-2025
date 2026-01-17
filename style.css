@@ -323,50 +323,26 @@ body.intro-active .snowflakes-container {
     z-index: 10;
 
     display: flex;
-    flex-direction: column;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
 
     background: transparent;
     padding: 0;
     margin: 0;
-    line-height: 1;
     animation: fadeInDown 0.8s ease-out;
     align-self: stretch;
+    overflow: hidden;
 }
 
-/* Верхняя строка: жирная, белая, капсом */
-.hero-title__top {
-    display: block;
-    font-family: 'Rostelecom Basis', sans-serif;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-
-    color: #ffffff;
-
-    font-size: clamp(2.5rem, 5.5vw, 7rem);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    white-space: nowrap;
-}
-
-/* Нижняя строка: рукописная, оранжевая */
-.hero-title__bottom {
-    display: block;
-
-    /* Google Font - одинаково отображается на всех устройствах */
-    font-family: 'Marck Script', cursive;
-    font-weight: 400;
-
-    color: #ff4f12;
-    font-size: clamp(2rem, 4.5vw, 5.5rem);
-
-    margin-top: 0.1em;
-    margin-left: 40%;
-
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-    transform: rotate(-3deg);
-    white-space: nowrap;
+/* Картинка заголовка */
+.hero-title__image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+    filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
 }
 
 @keyframes fadeInDown {
@@ -1199,15 +1175,6 @@ body.intro-active .snowflakes-container {
 
 /* Ноутбуки с низкой высотой экрана (1366x768 и подобные) */
 @media (max-height: 800px) {
-    .hero-title__top {
-        font-size: clamp(1.5rem, 4vw, 4rem);
-    }
-
-    .hero-title__bottom {
-        font-size: clamp(1.2rem, 3.5vw, 3.5rem);
-        margin-left: 40%;
-    }
-
     .bento-grid {
         gap: clamp(0.3rem, 0.8vw, 0.8rem);
     }
@@ -1223,19 +1190,6 @@ body.intro-active .snowflakes-container {
 
     .license-code {
         font-size: clamp(1rem, 2vw, 1.5rem);
-    }
-
-}
-
-/* Очень низкие экраны (высота < 700px) */
-@media (max-height: 700px) {
-    .hero-title__top {
-        font-size: clamp(1.2rem, 3.5vw, 3rem);
-    }
-
-    .hero-title__bottom {
-        font-size: clamp(1rem, 3vw, 2.5rem);
-        margin-left: 35%;
     }
 }
 
@@ -1290,15 +1244,6 @@ body.intro-active .snowflakes-container {
         font-size: 1.6rem;
         font-weight: 900;
     }
-
-    .hero-title__top {
-        font-size: clamp(2rem, 4.5vw, 3.5rem);
-    }
-
-    .hero-title__bottom {
-        font-size: clamp(1.3rem, 3.5vw, 3rem);
-        margin-left: 40%;
-    }
 }
 
 @media (max-width: 768px) {
@@ -1331,15 +1276,6 @@ body.intro-active .snowflakes-container {
     .hero-title {
         grid-column: 1 / 2;
         grid-row: 1 / 2;
-    }
-
-    .hero-title__top {
-        font-size: clamp(1.5rem, 5vw, 2.5rem);
-    }
-
-    .hero-title__bottom {
-        font-size: clamp(1.1rem, 4vw, 2rem);
-        margin-left: 35%;
     }
 
     .bento-grid {
@@ -1388,15 +1324,6 @@ body.intro-active .snowflakes-container {
         left: 0.25rem;
     }
 
-    .hero-title__top {
-        font-size: clamp(1.3rem, 5vw, 2rem);
-    }
-
-    .hero-title__bottom {
-        font-size: clamp(0.9rem, 4vw, 1.6rem);
-        margin-left: 30%;
-    }
-
     .license-plate {
         top: 0.3rem;
         right: 0.3rem;
@@ -1442,15 +1369,6 @@ body.intro-active .snowflakes-container {
 
     .logo {
         width: 50px;
-    }
-
-    .hero-title__top {
-        font-size: clamp(1.1rem, 4.5vw, 1.6rem);
-    }
-
-    .hero-title__bottom {
-        font-size: clamp(0.8rem, 4vw, 1.3rem);
-        margin-left: 25%;
     }
 
     .license-plate {
