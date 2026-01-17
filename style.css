@@ -607,11 +607,12 @@ body.intro-active .snowflakes-container {
 /* Владивосток после разделения - кликабелен для повторного просмотра */
 .bento-grid.split-mode .bento-item.vladivostok-split-left.viewed {
     cursor: pointer;
-    opacity: 0.35;
+    opacity: 0.35 !important;
+    animation: none !important;
 }
 
 .bento-grid.split-mode .bento-item.vladivostok-split-left.viewed:hover {
-    opacity: 0.5;
+    opacity: 0.5 !important;
     transform: translateY(-4px) scale(1.01);
 }
 
