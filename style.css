@@ -462,12 +462,12 @@ body.intro-active .snowflakes-container {
 }
 
 .bento-item.viewed {
-    opacity: 0.5;
+    opacity: 0.35;
     position: relative;
 }
 
 .bento-item.viewed:hover {
-    opacity: 0.65;
+    opacity: 0.5;
     transform: translateY(-8px) translateZ(20px) scale(1.01);
 }
 
@@ -607,10 +607,11 @@ body.intro-active .snowflakes-container {
 /* Владивосток после разделения - кликабелен для повторного просмотра */
 .bento-grid.split-mode .bento-item.vladivostok-split-left.viewed {
     cursor: pointer;
+    opacity: 0.35;
 }
 
 .bento-grid.split-mode .bento-item.vladivostok-split-left.viewed:hover {
-    opacity: 0.8;
+    opacity: 0.5;
     transform: translateY(-4px) scale(1.01);
 }
 
@@ -627,7 +628,7 @@ body.intro-active .snowflakes-container {
 
 /* Когда Кировская область просмотрена - такой же стиль как у остальных */
 .bento-grid.split-mode .bento-item.kirov-split-right.viewed {
-    opacity: 0.7 !important;
+    opacity: 0.35 !important;
     animation: none !important;
     cursor: pointer;
     border: 1px solid rgba(255, 255, 255, 1);
@@ -635,6 +636,10 @@ body.intro-active .snowflakes-container {
         0 4px 12px rgba(0, 0, 0, 0.1),
         0 8px 24px rgba(0, 0, 0, 0.12),
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.bento-grid.split-mode .bento-item.kirov-split-right.viewed:hover {
+    opacity: 0.5 !important;
 }
 
 /* ========================================
